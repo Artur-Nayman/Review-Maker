@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MergeHub Internal - Dev Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        
+        .hidden-section { display: none; }
+        
+        .tab-active {
+            background-color: #eef2ff;
+            color: #4338ca;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 z-50 transform translate-y-[-100%] opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium flex items-center shadow-lg border border-green-200">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            Copied to clipboard!
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                </div>
+                <h1 class="font-bold text-xl tracking-tight">MergeHub <span class="text-slate-400 font-normal">Internal</span></h1>
+            </div>
+            <div class="hidden sm:block text-xs font-mono text-slate-400">v1.3.0-image-integrated</div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            
+            <!-- Sidebar Navigation -->
+            <aside class="space-y-1">
+                <button onclick="switchTab('request-builder')" id="btn-request-builder" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors tab-active">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                    <span class="font-semibold">Review Builder</span>
+                </button>
+                <button onclick="switchTab('merge-guide')" id="btn-merge-guide" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="font-semibold">Merge Formatter</span>
+                </button>
+                <button onclick="switchTab('workflow')" id="btn-workflow" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <span class="font-semibold">Process Flow</span>
+                </button>
+                <button onclick="switchTab('handbook')" id="btn-handbook" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors text-slate-600 hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <span class="font-semibold">Cheat Sheet</span>
+                </button>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="md:col-span-3">
+                
+                <!-- Tab 1: Review Request Builder -->
+                <div id="section-request-builder" class="tab-content bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-1">Review Request Builder</h2>
+                        <p class="text-slate-500">Generate standardized team-communication strings.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold mb-1.5 text-slate-700">Action Type</label>
+                                <select id="req-type" onchange="updateRequest()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="req.rev">req.rev (Request Review)</option>
+                                    <option value="req.appr">req.appr (Approve Review)</option>
+                                    <option value="fix.need">fix.need (Needs Fixes)</option>
+                                    <option value="fix.made">fix.made (Fixes Ready / Re-review)</option>
+                                    <option value="rev.done">rev.done (Final Ping to Minna)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label id="req-names-label" class="block text-sm font-semibold mb-1.5 text-slate-700">Team Members</label>
+                                <input type="text" id="req-names" oninput="updateRequest()" placeholder="name1, name2 (without @)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-1.5 text-slate-700">Review Type</label>
+                                <select id="req-review-type" onchange="updateRequest()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="none" disabled selected>Select review type</option>
+                                    <option value="fullstack">Fullstack</option>
+                                    <option value="backend">Backend</option>
+                                    <option value="frontend">Frontend</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-1.5 text-slate-700">Merge/Branch Name</label>
+                                <input type="text" id="req-merge-name" oninput="updateRequest()" placeholder="feature/auth-login" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+
+                            <div id="importance-container">
+                                <label class="block text-sm font-semibold mb-1.5 text-slate-700">Importance</label>
+                                <div class="flex space-x-2" id="importance-group">
+                                    <button onclick="setImportance('imp')" class="imp-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium border bg-slate-50 text-slate-600 border-slate-200">Important</button>
+                                    <button onclick="setImportance('mid')" class="imp-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium border bg-indigo-600 text-white border-indigo-600 shadow-md">Mid</button>
+                                    <button onclick="setImportance('low')" class="imp-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium border bg-slate-50 text-slate-600 border-slate-200">Low</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col h-full">
+                            <label class="block text-sm font-semibold mb-1.5 text-slate-700">Live Result</label>
+                            <div class="bg-slate-900 rounded-xl p-6 flex-grow flex flex-col justify-between overflow-hidden">
+                                <code id="req-preview" class="text-indigo-300 break-words font-mono text-lg">Waiting for input...</code>
+                                <button onclick="copy('req-preview')" class="mt-6 w-full py-3 bg-white hover:bg-slate-100 text-slate-900 rounded-lg font-bold flex items-center justify-center transition-colors">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                    Copy Command
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Merge Formatter -->
+                <div id="section-merge-guide" class="tab-content hidden-section bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-1">Merge Request Guide</h2>
+                            <p class="text-slate-500">Structure your commit messages to follow company standards.</p>
+                        </div>
+                        <div class="bg-amber-50 text-amber-700 px-3 py-1 rounded text-xs font-semibold border border-amber-200 uppercase">Mandatory Format</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1.5 text-slate-700">Type</label>
+                                    <select id="commit-type" onchange="updateCommit()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                                        <option value="feat">feat (Feature)</option>
+                                        <option value="fix">fix (Fix)</option>
+                                        <option value="refactor">refactor (Refactor)</option>
+                                        <option value="perf">perf (Performance)</option>
+                                        <option value="style">style (Style)</option>
+                                        <option value="docs">docs (Docs)</option>
+                                        <option value="test">test (Test)</option>
+                                        <option value="build">build (Build)</option>
+                                        <option value="ops">ops (Ops)</option>
+                                        <option value="chore">chore (Chore)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold mb-1.5 text-slate-700">Scope <span class="text-slate-400 font-normal">(optional)</span></label>
+                                    <input type="text" id="commit-scope" oninput="updateCommit()" placeholder="e.g., profile" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                                <input type="checkbox" id="commit-breaking" onchange="updateCommit()" class="w-5 h-5 accent-red-600">
+                                <label for="commit-breaking" class="text-sm font-bold text-red-700 flex items-center cursor-pointer">Breaking Changes Indicator (!)</label>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-1.5 text-slate-700">Description <span class="text-red-500">*</span></label>
+                                <input type="text" id="commit-desc" oninput="updateCommit()" placeholder="concise description" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold mb-1.5 text-slate-700">Body <span class="text-slate-400 font-normal">(optional)</span></label>
+                                <textarea id="commit-body" oninput="updateCommit()" placeholder="Why was this change made?" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 h-20 focus:ring-2 focus:ring-indigo-500 outline-none text-sm resize-none"></textarea>
+                            </div>
+
+                            <div id="footer-container" class="hidden">
+                                <label class="block text-sm font-semibold mb-1.5 text-red-700">Breaking Changes Detail</label>
+                                <textarea id="commit-footer" oninput="updateCommit()" placeholder="Explain what broke..." class="w-full bg-red-50 border border-red-200 rounded-lg px-4 py-2 h-20 focus:ring-2 focus:ring-red-500 outline-none text-sm resize-none"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="block text-sm font-semibold text-slate-700">Commit Preview</label>
+                            <div class="bg-slate-900 rounded-xl p-6 h-[340px] flex flex-col justify-between">
+                                <div class="overflow-y-auto custom-scrollbar">
+                                    <pre id="commit-preview" class="text-green-400 font-mono text-sm whitespace-pre-wrap leading-relaxed">feat: update UI</pre>
+                                </div>
+                                <button onclick="copy('commit-preview')" class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold flex items-center justify-center transition-colors shadow-lg">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                    Copy Merge Message
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Workflow Visualizer (IMAGE INTEGRATED) -->
+                <div id="section-workflow" class="tab-content hidden-section space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 flex flex-col items-center">
+                        <h2 class="text-2xl font-bold mb-8">Review & Merge Workflow</h2>
+                        <div class="w-full max-w-4xl overflow-hidden rounded-xl border border-slate-100 shadow-lg bg-slate-900">
+                            <!-- Image URL updated here with the SharePoint link -->
+                            <img src="Reviewing process.png" alt="Full Process Workflow" class="w-full h-auto block" onerror="this.src='https://via.placeholder.com/800x600?text=Workflow+Image+Not+Found'">
+                        </div>
+                        <div class="mt-8 p-4 bg-indigo-50 border border-indigo-100 rounded-xl w-full max-w-4xl">
+                            <p class="text-xs text-indigo-700 leading-relaxed">
+                                <strong>Reminder:</strong> A minimum of <strong>3 Approvals</strong> is required before you can send the final <code>rev.done</code> notification to @Minna. Ensure all requested fixes are addressed and re-reviewed.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Handbook -->
+                <div id="section-handbook" class="tab-content hidden-section space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:col-span-2">
+                            <h3 class="text-lg font-bold mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Command Glossary
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <code class="text-indigo-600 font-bold">req.rev</code>
+                                    <p class="text-[11px] text-slate-500 mt-1">Request a review from specific person(s)</p>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <code class="text-indigo-600 font-bold">req.appr</code>
+                                    <p class="text-[11px] text-slate-500 mt-1">Provide approval for a merge request</p>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <code class="text-indigo-600 font-bold">fix.need</code>
+                                    <p class="text-[11px] text-slate-500 mt-1">Request specific fixes from the developer</p>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <code class="text-indigo-600 font-bold">fix.made</code>
+                                    <p class="text-[11px] text-slate-500 mt-1">Alert reviewer that fixes are ready</p>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                    <code class="text-indigo-600 font-bold">rev.done</code>
+                                    <p class="text-[11px] text-slate-500 mt-1">Final notification that MR is fully approved</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="text-lg font-bold mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Importance & SLAs
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="flex items-center"><div class="w-2 h-2 rounded-full bg-red-500 mr-3"></div><div><span class="font-bold text-sm">IMP</span><p class="text-xs text-slate-500">Important</p></div></div>
+                                    <span class="text-xs font-medium text-slate-700">As fast as possible</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="flex items-center"><div class="w-2 h-2 rounded-full bg-yellow-500 mr-3"></div><div><span class="font-bold text-sm">MID</span><p class="text-xs text-slate-500">Middle</p></div></div>
+                                    <span class="text-xs font-medium text-slate-700">Done in 1-2 weeks</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="flex items-center"><div class="w-2 h-2 rounded-full bg-blue-500 mr-3"></div><div><span class="font-bold text-sm">LOW</span><p class="text-xs text-slate-500">Low</p></div></div>
+                                    <span class="text-xs font-medium text-slate-700">Done in a month</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                            <h3 class="text-lg font-bold mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>
+                                Scope Guidelines
+                            </h3>
+                            <div class="space-y-4">
+                                <p class="text-sm text-slate-600">Only use routes as an identifier.</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-2 py-1 bg-indigo-50 border border-indigo-100 rounded text-xs font-mono text-indigo-600">application</span>
+                                    <span class="px-2 py-1 bg-indigo-50 border border-indigo-100 rounded text-xs font-mono text-indigo-600">profile</span>
+                                    <span class="px-2 py-1 bg-indigo-50 border border-indigo-100 rounded text-xs font-mono text-indigo-600">api</span>
+                                    <span class="px-2 py-1 bg-indigo-50 border border-indigo-100 rounded text-xs font-mono text-indigo-600">auth</span>
+                                    <span class="px-2 py-1 bg-indigo-50 border border-indigo-100 rounded text-xs font-mono text-indigo-600">ui</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-2xl p-8 text-white">
+                        <h3 class="text-xl font-bold mb-4">Grammar Rules</h3>
+                        <ul class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
+                            <li class="flex items-start">
+                                <svg class="w-4 h-4 mr-2 text-indigo-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                Use <strong class="text-white">"change"</strong> (not "changed")
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-4 h-4 mr-2 text-indigo-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                Don't capitalize first letter
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-4 h-4 mr-2 text-indigo-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                No period at the end
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-4 h-4 mr-2 text-indigo-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                Active voice: "This commit will..."
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentImportance = 'mid';
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            document.getElementById('btn-' + tabId).classList.add('tab-active');
+            document.getElementById('btn-' + tabId).classList.remove('text-slate-600', 'hover:bg-slate-100');
+
+            document.querySelectorAll('.tab-content').forEach(section => {
+                section.classList.add('hidden-section');
+            });
+            document.getElementById('section-' + tabId).classList.remove('hidden-section');
+        }
+
+        function setImportance(lvl) {
+            currentImportance = lvl;
+            document.querySelectorAll('.imp-btn').forEach(btn => {
+                btn.className = "imp-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium border bg-slate-50 text-slate-600 border-slate-200";
+            });
+            
+            const activeBtn = event.target;
+            activeBtn.className = "imp-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium border bg-indigo-600 text-white border-indigo-600 shadow-md";
+            updateRequest();
+        }
+
+        function updateRequest() {
+            const type = document.getElementById('req-type').value;
+            const reviewType = document.getElementById('req-review-type').value;
+            const namesInput = document.getElementById('req-names').value;
+            const mergeName = document.getElementById('req-merge-name').value || "[merge name]";
+            
+            document.getElementById('importance-container').style.display = (type === 'req.rev') ? 'block' : 'none';
+            document.getElementById('req-names-label').innerText = (type === 'fix.made') ? 'Requested Dev' : 'Team Members';
+
+            const names = namesInput.split(',')
+                .map(n => n.trim())
+                .filter(n => n !== "")
+                .map(n => n.startsWith('@') ? n : '@' + n)
+                .join(', ');
+
+            let result = "";
+            const reviewPart = reviewType !== 'none' ? ` | review: ${reviewType}` : ' | review: [select type]';
+            switch(type) {
+                case 'req.rev': result = `req.rev ${names || "@name"} | merge: ${mergeName}${reviewPart} | ${currentImportance}`; break;
+                case 'req.appr': result = `req.appr for ${names || "@name"} | merge: ${mergeName}${reviewPart}`; break;
+                case 'fix.need': result = `fix.need ${names || "@name"} | merge: ${mergeName}${reviewPart}`; break;
+                case 'fix.made': result = `fix.made ${mergeName} | req.dev: ${names || "@name"}${reviewPart}`; break;
+                case 'rev.done': result = `rev.done for @Minna | merge: ${mergeName}${reviewPart}`; break;
+            }
+
+            document.getElementById('req-preview').innerText = result;
+        }
+
+        function updateCommit() {
+            const type = document.getElementById('commit-type').value;
+            const scope = document.getElementById('commit-scope').value;
+            const isBreaking = document.getElementById('commit-breaking').checked;
+            const desc = document.getElementById('commit-desc').value || "description";
+            const body = document.getElementById('commit-body').value;
+            const footer = document.getElementById('commit-footer').value;
+
+            document.getElementById('footer-container').style.display = isBreaking ? 'block' : 'none';
+
+            let header = type;
+            if (scope) header += `(${scope})`;
+            if (isBreaking) header += '!';
+            header += `: ${desc.toLowerCase().replace(/\.$/, '')}`;
+
+            let full = header;
+            if (body) full += `\n\n${body}`;
+            if (footer && isBreaking) {
+                const prefix = footer.startsWith('BREAKING CHANGES:') ? '' : 'BREAKING CHANGES: ';
+                full += `\n\n${prefix}${footer}`;
+            }
+
+            document.getElementById('commit-preview').innerText = full;
+        }
+
+        function copy(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const toast = document.getElementById('toast');
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.transform = 'translateY(-100%)';
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        updateRequest();
+        updateCommit();
+    </script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Maker - Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-small">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <path d="M9 14l2 2 4-4"/>
+        </svg>
+      </div>
+      <h1>Review Maker</h1>
+    </div>
+    <div class="header-right">
+      <div class="user-badge">
+        <span id="user-name"></span>
+        <span id="user-role" class="role-badge"></span>
+      </div>
+      <button id="logout-btn" class="btn btn-ghost">Logout</button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="new-review">New Review</button>
+    <button class="tab-btn" data-tab="active-reviews">Active Reviews</button>
+    <button class="tab-btn" data-tab="my-reviews">My Reviews</button>
+    <button class="tab-btn" data-tab="reviewers">Reviewers</button>
+    <button class="tab-btn" data-tab="history">History</button>
+    <button class="tab-btn admin-only" data-tab="admin" style="display: none;">Admin</button>
+  </nav>
+
+  <main class="app-main">
+    <!-- New Review Tab -->
+    <section id="tab-new-review" class="tab-content active">
+      <div class="card">
+        <h2>Request New Review</h2>
+        <form id="new-review-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="branch-name">Branch Name *</label>
+              <input type="text" id="branch-name" placeholder="feature/auth-login" required>
+            </div>
+            <div class="form-group">
+              <label for="review-type">Review Type *</label>
+              <select id="review-type" required>
+                <option value="">Select type</option>
+                <option value="frontend">Frontend</option>
+                <option value="backend">Backend</option>
+                <option value="fullstack">Fullstack</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="priority">Priority *</label>
+              <select id="priority" required>
+                <option value="low">Low (within a month)</option>
+                <option value="mid" selected>Mid (1-2 weeks)</option>
+                <option value="imp">Important (ASAP)</option>
+              </select>
+            </div>
+          </div>
+          <div id="review-error" class="error-msg" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary">Create Review Request</button>
+        </form>
+      </div>
+
+      <div id="created-review" class="card" style="display: none;">
+        <h3>Review Created</h3>
+        <div id="created-review-details"></div>
+        <button class="btn btn-secondary" onclick="document.getElementById('created-review').style.display='none'">Close</button>
+      </div>
+    </section>
+
+    <!-- Active Reviews Tab -->
+    <section id="tab-active-reviews" class="tab-content">
+      <div class="card full-width">
+        <h2>Active Reviews</h2>
+        <div class="table-wrapper">
+          <table id="active-reviews-table">
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Merger</th>
+                <th>Reviewers</th>
+                <th>Approvals</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="active-reviews-body"></tbody>
+          </table>
+        </div>
+        <div id="no-active-reviews" class="empty-state" style="display: none;">
+          <p>No active reviews</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- My Reviews Tab -->
+    <section id="tab-my-reviews" class="tab-content">
+      <div class="card full-width">
+        <h2>My Reviews</h2>
+        <div class="table-wrapper">
+          <table id="my-reviews-table">
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Role</th>
+                <th>Reviewers</th>
+                <th>Approvals</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="my-reviews-body"></tbody>
+          </table>
+        </div>
+        <div id="no-my-reviews" class="empty-state" style="display: none;">
+          <p>No reviews assigned to you</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviewers Tab -->
+    <section id="tab-reviewers" class="tab-content">
+      <div class="card full-width">
+        <h2>Reviewer Loads</h2>
+        <div class="table-wrapper">
+          <table id="reviewers-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Speciality</th>
+                <th>Role</th>
+                <th>Current Load</th>
+                <th>Capacity</th>
+              </tr>
+            </thead>
+            <tbody id="reviewers-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- History Tab -->
+    <section id="tab-history" class="tab-content">
+      <div class="card full-width">
+        <h2>Review History (Last 30 Days)</h2>
+        <div class="table-wrapper">
+          <table id="history-table">
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Merger</th>
+                <th>Reviewers</th>
+                <th>Result</th>
+                <th>Priority</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+        <div id="no-history" class="empty-state" style="display: none;">
+          <p>No review history in the last 30 days</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin Tab -->
+    <section id="tab-admin" class="tab-content">
+      <div class="card">
+        <h2>Manage Reviewers</h2>
+
+        <div class="admin-section">
+          <h3>Change Role</h3>
+          <form id="role-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="role-user-select">User</label>
+                <select id="role-user-select" required></select>
+              </div>
+              <div class="form-group">
+                <label for="role-select">New Role</label>
+                <select id="role-select" required>
+                  <option value="reviewer">Reviewer</option>
+                  <option value="senior">Senior Reviewer</option>
+                  <option value="scrum_master">Scrum Master</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Role</button>
+          </form>
+        </div>
+
+        <div class="admin-section">
+          <h3>Add Reviewer</h3>
+          <form id="add-reviewer-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="add-name">Name *</label>
+                <input type="text" id="add-name" required>
+              </div>
+              <div class="form-group">
+                <label for="add-speciality">Speciality</label>
+                <select id="add-speciality">
+                  <option value="Fullstack">Fullstack</option>
+                  <option value="Frontend">Frontend</option>
+                  <option value="Backend">Backend</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="add-role">Role</label>
+                <select id="add-role">
+                  <option value="reviewer">Reviewer</option>
+                  <option value="senior">Senior Reviewer</option>
+                  <option value="scrum_master">Scrum Master</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Reviewer</button>
+          </form>
+        </div>
+
+        <div class="admin-section">
+          <h3>Import CSV</h3>
+          <form id="csv-import-form">
+            <div class="form-group">
+              <label for="csv-file">Upload CSV File</label>
+              <input type="file" id="csv-file" accept=".csv">
+            </div>
+            <p class="help-text">CSV format: "DevName","CurrentLoad","Speciality"</p>
+            <button type="submit" class="btn btn-secondary">Import & Replace</button>
+          </form>
+        </div>
+
+        <div class="admin-section">
+          <h3>Settings</h3>
+          <form id="settings-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="setting-reviewers">Reviewers per Request</label>
+                <input type="number" id="setting-reviewers" min="1" max="5" value="3">
+              </div>
+              <div class="form-group">
+                <label for="setting-max-load">Max Load per Reviewer</label>
+                <input type="number" id="setting-max-load" min="1" max="10" value="3">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+          </form>
+        </div>
+
+        <div class="admin-section">
+          <h3>Remove Reviewer</h3>
+          <form id="remove-reviewer-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="remove-user-select">User to Remove</label>
+                <select id="remove-user-select" required></select>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-danger">Remove Reviewer</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Review Detail Modal -->
+  <div id="review-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Review Details</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
