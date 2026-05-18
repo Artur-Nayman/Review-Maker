@@ -5,14 +5,33 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_PATH = path.join(__dirname, 'data.json');
+const SALT_ROUNDS = 10;
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many password operations. Please wait 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function loadData() {
   const raw = fs.readFileSync(DATA_PATH, 'utf-8');
@@ -33,6 +52,32 @@ function isReviewableRole(role) {
 
 function isNonReviewRole(role) {
   return role === 'admin' || role === 'manager' || role === 'scrum_master';
+}
+
+function isPasswordHashed(password) {
+  return password && password.startsWith('$2b$');
+}
+
+async function hashPassword(password) {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+async function comparePassword(password, hash) {
+  return bcrypt.compare(password, hash);
+}
+
+async function migratePasswords(data) {
+  let changed = false;
+  for (const reviewer of data.reviewers) {
+    if (reviewer.password && !isPasswordHashed(reviewer.password)) {
+      reviewer.password = await hashPassword(reviewer.password);
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveData(data);
+    console.log('Migrated plaintext passwords to bcrypt hashes');
+  }
 }
 
 function selectReviewers(data, reviewType, count, excludeName) {
@@ -95,7 +140,7 @@ function generateToken() {
 
 // --- API Routes ---
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
   const { name, password } = req.body;
   const data = loadData();
   const reviewer = getReviewerByName(data, name);
@@ -104,12 +149,14 @@ app.post('/api/login', (req, res) => {
     return res.status(404).json({ error: 'User not found' });
   }
 
-  if (reviewer.password && password !== reviewer.password) {
-    return res.status(401).json({ error: 'Invalid password' });
-  }
-
-  if (reviewer.password && !password) {
-    return res.status(401).json({ error: 'Password required' });
+  if (reviewer.password) {
+    if (!password) {
+      return res.status(401).json({ error: 'Password required' });
+    }
+    const valid = await comparePassword(password, reviewer.password);
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
   }
 
   res.json({
@@ -160,11 +207,6 @@ app.post('/api/reviews', (req, res) => {
 
   if (!branch || !merger || !reviewType || !priority) {
     return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  const mergerUser = getReviewerByName(data, merger);
-  if (mergerUser && isNonReviewRole(mergerUser.role)) {
-    return res.status(400).json({ error: 'Managers, Scrum Masters, and Admins cannot create reviews' });
   }
 
   const count = data.settings.reviewersPerRequest || 3;
@@ -449,7 +491,7 @@ app.delete('/api/reviewers/:name', (req, res) => {
   res.json(data.reviewers);
 });
 
-app.post('/api/reviewers/:name/password', (req, res) => {
+app.post('/api/reviewers/:name/password', passwordLimiter, async (req, res) => {
   const { password } = req.body;
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
@@ -459,21 +501,21 @@ app.post('/api/reviewers/:name/password', (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 4 characters' });
   }
 
-  reviewer.password = password;
+  reviewer.password = await hashPassword(password);
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
   saveData(data);
   res.json({ message: 'Password set successfully' });
 });
 
-app.post('/api/reviewers/:name/reset-password', (req, res) => {
+app.post('/api/reviewers/:name/reset-password', passwordLimiter, async (req, res) => {
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
   if (!reviewer) return res.status(404).json({ error: 'User not found' });
 
   const otp = generateOTP();
-  reviewer.password = otp;
+  reviewer.password = await hashPassword(otp);
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
   saveData(data);
@@ -481,25 +523,28 @@ app.post('/api/reviewers/:name/reset-password', (req, res) => {
   res.json({ message: 'Password reset', password: otp });
 });
 
-app.put('/api/reviewers/:name/change-password', (req, res) => {
+app.put('/api/reviewers/:name/change-password', passwordLimiter, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
   if (!reviewer) return res.status(404).json({ error: 'User not found' });
-  if (reviewer.password && oldPassword !== reviewer.password) {
-    return res.status(401).json({ error: 'Current password is incorrect' });
+  if (reviewer.password) {
+    const valid = await comparePassword(oldPassword, reviewer.password);
+    if (!valid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
   }
   if (!newPassword || newPassword.length < 4) {
     return res.status(400).json({ error: 'New password must be at least 4 characters' });
   }
 
-  reviewer.password = newPassword;
+  reviewer.password = await hashPassword(newPassword);
   saveData(data);
   res.json({ message: 'Password changed successfully' });
 });
 
-app.post('/api/reviewers/:name/generate-link', (req, res) => {
+app.post('/api/reviewers/:name/generate-link', passwordLimiter, (req, res) => {
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
@@ -519,7 +564,7 @@ app.post('/api/reviewers/:name/generate-link', (req, res) => {
   res.json({ link, expiresAt: expiry.toISOString() });
 });
 
-app.post('/api/set-password', (req, res) => {
+app.post('/api/set-password', passwordLimiter, async (req, res) => {
   const { token, name, password } = req.body;
   const data = loadData();
   const reviewer = getReviewerByName(data, name);
@@ -535,7 +580,7 @@ app.post('/api/set-password', (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 4 characters' });
   }
 
-  reviewer.password = password;
+  reviewer.password = await hashPassword(password);
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
   saveData(data);
@@ -618,7 +663,15 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`\nReview Maker running at http://localhost:${PORT}`);
-  console.log(`Default admin: Admin / root\n`);
-});
+async function startServer() {
+  const data = loadData();
+  await migratePasswords(data);
+
+  app.listen(PORT, () => {
+    console.log(`\nReview Maker running at http://localhost:${PORT}`);
+    console.log(`Default admin: Admin / root\n`);
+    console.log(`Rate limiting: 5 login attempts per 15 minutes\n`);
+  });
+}
+
+startServer();

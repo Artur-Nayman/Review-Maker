@@ -15,7 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
   roleBadge.className = `role-badge ${currentUser.role}`;
 
   if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-    document.querySelector('.admin-only').style.display = 'block';
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+  }
+
+  if (currentUser.role === 'admin') {
+    document.getElementById('merger-group').style.display = 'flex';
+    loadMergerOptions();
   }
 
   setupTabs();
@@ -56,6 +61,22 @@ function setupTabs() {
   });
 }
 
+function loadMergerOptions() {
+  const select = document.getElementById('merger-select');
+  select.innerHTML = '';
+
+  API.getReviewers().then(reviewers => {
+    reviewers.sort((a, b) => a.name.localeCompare(b.name));
+    reviewers.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.name;
+      opt.textContent = r.name;
+      if (r.name === currentUser.name) opt.selected = true;
+      select.appendChild(opt);
+    });
+  });
+}
+
 function setupNewReviewForm() {
   document.getElementById('new-review-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -65,12 +86,19 @@ function setupNewReviewForm() {
     const branch = document.getElementById('branch-name').value.trim();
     const reviewType = document.getElementById('review-type').value;
     const priority = document.getElementById('priority').value;
+    const merger = currentUser.role === 'admin'
+      ? document.getElementById('merger-select').value
+      : currentUser.name;
 
     try {
-      const review = await API.createReview(branch, currentUser.name, reviewType, priority);
+      const review = await API.createReview(branch, merger, reviewType, priority);
 
       document.getElementById('created-review').style.display = 'block';
+      const mergerRow = review.merger !== currentUser.name
+        ? `<div class="review-detail-row"><span class="review-detail-label">Merger</span><span class="review-detail-value">${review.merger}</span></div>`
+        : '';
       document.getElementById('created-review-details').innerHTML = `
+        ${mergerRow}
         <div class="review-detail-row">
           <span class="review-detail-label">Branch</span>
           <span class="review-detail-value">${review.branch}</span>
