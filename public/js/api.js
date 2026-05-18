@@ -27,8 +27,12 @@ const API = {
     return data;
   },
 
-  async delete(path) {
-    const res = await fetch(path, { method: 'DELETE' });
+  async delete(path, body) {
+    const res = await fetch(path, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `DELETE ${path} failed: ${res.status}`);
     return data;
@@ -54,6 +58,10 @@ const API = {
     return this.post('/api/reviews', { branch, merger, reviewType, priority });
   },
 
+  async deleteReview(id, userRole, userName) {
+    return this.delete(`/api/reviews/${id}`, { userRole, userName });
+  },
+
   async approveReview(id, reviewerName) {
     return this.post(`/api/reviews/${id}/approve`, { reviewerName });
   },
@@ -66,8 +74,8 @@ const API = {
     return this.post(`/api/reviews/${id}/fix-done`);
   },
 
-  async escalateReview(id, mergerName, reason) {
-    return this.post(`/api/reviews/${id}/escalate`, { mergerName, reason });
+  async escalateReview(id, mergerName, reason, userRole) {
+    return this.post(`/api/reviews/${id}/escalate`, { mergerName, reason, userRole });
   },
 
   async escalationDecide(id, seniorName, decision) {
@@ -100,5 +108,25 @@ const API = {
 
   async updateSettings(settings) {
     return this.put('/api/settings', settings);
+  },
+
+  async setUserPassword(name, password) {
+    return this.post(`/api/reviewers/${name}/password`, { password });
+  },
+
+  async resetPassword(name) {
+    return this.post(`/api/reviewers/${name}/reset-password`);
+  },
+
+  async changeOwnPassword(name, oldPassword, newPassword) {
+    return this.put(`/api/reviewers/${name}/change-password`, { oldPassword, newPassword });
+  },
+
+  async generatePasswordLink(name) {
+    return this.post(`/api/reviewers/${name}/generate-link`);
+  },
+
+  async setEmail(name, email) {
+    return this.post(`/api/reviewers/${name}/email`, { email });
   }
 };

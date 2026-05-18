@@ -155,6 +155,7 @@ body {
 .role-badge.admin { background: var(--danger); color: white; }
 .role-badge.senior { background: var(--warning); color: #1e293b; }
 .role-badge.scrum_master { background: var(--info); color: white; }
+.role-badge.manager { background: #14b8a6; color: white; }
 .role-badge.reviewer { background: var(--border); color: var(--text); }
 
 /* Tab Navigation */

@@ -1,137 +1,25 @@
 {
   "reviewers": [
-    {
-      "name": "Admin",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "admin"
-    },
-    {
-      "name": "Reviewer01",
-      "load": 1,
-      "speciality": "Frontend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer02",
-      "load": 1,
-      "speciality": "Frontend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer03",
-      "load": 1,
-      "speciality": "Fullstack",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer04",
-      "load": 0,
-      "speciality": "Backend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer05",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "senior"
-    },
-    {
-      "name": "Reviewer06",
-      "load": 0,
-      "speciality": "Frontend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer07",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer08",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer09",
-      "load": 0,
-      "speciality": "Frontend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer10",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer11",
-      "load": 0,
-      "speciality": "Frontend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer12",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer13",
-      "load": 0,
-      "speciality": "Backend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer14",
-      "load": 0,
-      "speciality": "Backend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer15",
-      "load": 0,
-      "speciality": "Backend",
-      "role": "reviewer"
-    },
-    {
-      "name": "Reviewer16",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "reviewer"
-    }
+    { "name": "Admin", "load": 0, "speciality": "None", "role": "admin", "email": "", "password": "root" },
+    { "name": "Reviewer01", "load": 0, "speciality": "Frontend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer02", "load": 0, "speciality": "Frontend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer03", "load": 0, "speciality": "Fullstack", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer04", "load": 0, "speciality": "Backend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer05", "load": 0, "speciality": "Fullstack", "role": "senior", "email": "", "password": "" },
+    { "name": "Reviewer06", "load": 0, "speciality": "Frontend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer07", "load": 0, "speciality": "Fullstack", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer08", "load": 0, "speciality": "Fullstack", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer09", "load": 0, "speciality": "Frontend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer10", "load": 0, "speciality": "Fullstack", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer11", "load": 0, "speciality": "Frontend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer12", "load": 0, "speciality": "Fullstack", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer13", "load": 0, "speciality": "Backend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer14", "load": 0, "speciality": "Backend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer15", "load": 0, "speciality": "Backend", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Reviewer16", "load": 0, "speciality": "Fullstack", "role": "reviewer", "email": "", "password": "" },
+    { "name": "Minna", "load": 0, "speciality": "None", "role": "scrum_master", "email": "", "password": "" }
   ],
-  "reviews": [
-    {
-      "id": "dbcece81-6799-4ec5-96f8-bec792c85fef",
-      "branch": "adasd",
-      "merger": "Admin",
-      "reviewers": [
-        {
-          "name": "Reviewer01",
-          "status": "pending"
-        },
-        {
-          "name": "Reviewer02",
-          "status": "pending"
-        },
-        {
-          "name": "Reviewer03",
-          "status": "pending"
-        }
-      ],
-      "approvalCount": 0,
-      "status": "in_review",
-      "priority": "low",
-      "reviewType": "frontend",
-      "createdAt": "2026-05-18T11:59:52.595Z",
-      "updatedAt": "2026-05-18T11:59:52.595Z",
-      "escalation": null,
-      "comments": []
-    }
-  ],
+  "reviews": [],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,

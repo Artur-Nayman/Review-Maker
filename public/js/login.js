@@ -1,8 +1,11 @@
 const userSelect = document.getElementById('user-select');
 const passwordGroup = document.getElementById('password-group');
-const adminPassword = document.getElementById('admin-password');
+const loginPassword = document.getElementById('login-password');
+const passwordHint = document.getElementById('password-hint');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
+
+let usersWithPasswords = new Set();
 
 async function loadUsers() {
   try {
@@ -16,6 +19,10 @@ async function loadUsers() {
       opt.value = r.name;
       opt.textContent = `${r.name} (${r.speciality})`;
       userSelect.appendChild(opt);
+
+      if (r.hasPassword) {
+        usersWithPasswords.add(r.name);
+      }
     });
   } catch (err) {
     loginError.textContent = 'Failed to load users. Is the server running?';
@@ -25,15 +32,15 @@ async function loadUsers() {
 
 userSelect.addEventListener('change', () => {
   const selected = userSelect.value;
-  const opt = userSelect.querySelector(`option[value="${selected}"]`);
-  const isSenior = opt && opt.textContent.includes('Senior');
 
-  if (selected.toLowerCase().includes('artur nayman')) {
-    passwordGroup.style.display = 'block';
-    adminPassword.required = true;
+  if (usersWithPasswords.has(selected)) {
+    passwordHint.style.display = 'block';
+    loginPassword.required = true;
+    loginPassword.placeholder = 'Enter your password';
   } else {
-    passwordGroup.style.display = 'none';
-    adminPassword.required = false;
+    passwordHint.style.display = 'none';
+    loginPassword.required = false;
+    loginPassword.placeholder = 'Optional (set after first login)';
   }
 });
 
@@ -42,7 +49,7 @@ loginForm.addEventListener('submit', async (e) => {
   loginError.style.display = 'none';
 
   const name = userSelect.value;
-  const password = adminPassword.value;
+  const password = loginPassword.value;
 
   try {
     const res = await fetch('/api/login', {
@@ -60,6 +67,12 @@ loginForm.addEventListener('submit', async (e) => {
     }
 
     localStorage.setItem('reviewMakerUser', JSON.stringify(data));
+
+    if (!data.hasPassword && data.role !== 'admin') {
+      window.location.href = '/set-password.html?token=first-login&name=' + encodeURIComponent(data.name);
+      return;
+    }
+
     window.location.href = '/dashboard.html';
   } catch (err) {
     loginError.textContent = 'Connection error. Is the server running?';
