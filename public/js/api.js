@@ -90,6 +90,14 @@ const API = {
     return this.put(`/api/reviewers/${name}/role`, { role });
   },
 
+  async setLoad(name, load) {
+    return this.put(`/api/reviewers/${name}/load`, { load });
+  },
+
+  async createManualReview(branch, merger, reviewType, priority, reviewers) {
+    return this.post('/api/reviews/manual', { branch, merger, reviewType, priority, reviewers });
+  },
+
   async addReviewer(name, speciality, role) {
     return this.post('/api/reviewers', { name, speciality, role });
   },
@@ -111,22 +119,22 @@ const API = {
   },
 
   async setUserPassword(name, password) {
-    return this.post(`/api/reviewers/${name}/password`, { password });
+    return this.post(`/api/reviewers/${name}/password`, { password, userRole: currentUser?.role || 'admin' });
   },
 
-  async resetPassword(name) {
-    return this.post(`/api/reviewers/${name}/reset-password`);
+  async resetPassword(name, userRole) {
+    return this.post(`/api/reviewers/${name}/reset-password`, { userRole });
   },
 
-  async changeOwnPassword(name, oldPassword, newPassword) {
-    return this.put(`/api/reviewers/${name}/change-password`, { oldPassword, newPassword });
-  },
-
-  async generatePasswordLink(name) {
-    return this.post(`/api/reviewers/${name}/generate-link`);
+  async getAdminPasswords(userRole) {
+    return this.get(`/api/admin/passwords?userRole=${userRole}`);
   },
 
   async setEmail(name, email) {
     return this.post(`/api/reviewers/${name}/email`, { email });
+  },
+
+  async unlinkDiscord(name) {
+    return this.post(`/api/reviewers/${name}/unlink`, { userRole: currentUser?.role || 'admin' });
   }
 };

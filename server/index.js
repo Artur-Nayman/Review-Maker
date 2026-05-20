@@ -7,11 +7,14 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
+const simpleGit = require('simple-git');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_PATH = path.join(__dirname, 'data.json');
 const SALT_ROUNDS = 10;
+const REPO_DIR = path.join(__dirname, '..');
+const git = simpleGit(REPO_DIR);
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -38,8 +41,36 @@ function loadData() {
   return JSON.parse(raw);
 }
 
-function saveData(data) {
+let saveQueue = Promise.resolve();
+
+function saveData(data, commitMsg) {
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), 'utf-8');
+
+  if (!commitMsg) return;
+
+  saveQueue = saveQueue.then(async () => {
+    try {
+      await git.add('server/data.json');
+      const status = await git.status();
+      if (status.files.length === 0) return;
+      await git.commit(commitMsg, '--no-verify');
+      await git.push('origin', (await git.branch()).current, ['--no-verify']);
+    } catch (err) {
+      if (err.message.includes('non-fast-forward') || err.message.includes('conflict')) {
+        try {
+          await git.pull('origin', (await git.branch()).current, ['--rebase', '--no-verify']);
+          console.warn('[Git] Conflict on push, rebased. Retrying push...');
+          await git.add('server/data.json');
+          await git.commit(commitMsg + ' (after rebase)', '--no-verify');
+          await git.push('origin', (await git.branch()).current, ['--no-verify']);
+        } catch (retryErr) {
+          console.error('[Git] Failed to push after rebase:', retryErr.message);
+        }
+      } else {
+        console.error('[Git] Push failed:', err.message);
+      }
+    }
+  });
 }
 
 function getReviewerByName(data, name) {
@@ -69,13 +100,21 @@ async function comparePassword(password, hash) {
 async function migratePasswords(data) {
   let changed = false;
   for (const reviewer of data.reviewers) {
+    reviewer.discordId = reviewer.discordId || '';
     if (reviewer.password && !isPasswordHashed(reviewer.password)) {
+      reviewer.plainPassword = reviewer.password;
       reviewer.password = await hashPassword(reviewer.password);
+      changed = true;
+    }
+    if (!reviewer.plainPassword && reviewer.password) {
+      const generated = generatePassword();
+      reviewer.plainPassword = generated;
+      reviewer.password = await hashPassword(generated);
       changed = true;
     }
   }
   if (changed) {
-    saveData(data);
+    saveData(data, 'Migrated plaintext passwords to bcrypt hashes');
     console.log('Migrated plaintext passwords to bcrypt hashes');
   }
 }
@@ -134,8 +173,35 @@ function generateOTP() {
   return result;
 }
 
+function generatePassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let result = '';
+  for (let i = 0; i < 12; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
+}
+
+function generateReviewId(data) {
+  const num = data.settings.nextReviewNumber || 1;
+  data.settings.nextReviewNumber = num + 1;
+  saveData(data, 'Incremented review counter');
+  return `REV-${num}`;
+}
+
+function findReviewById(data, id) {
+  if (id.startsWith('REV-')) {
+    return data.reviews.find(r => r.id === id);
+  }
+  const num = parseInt(id);
+  if (!isNaN(num)) {
+    return data.reviews.find(r => r.id === `REV-${num}`);
+  }
+  return data.reviews.find(r => r.id === id);
 }
 
 // --- API Routes ---
@@ -196,7 +262,7 @@ app.get('/api/reviews', (req, res) => {
 
 app.get('/api/reviews/:id', (req, res) => {
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
   if (!review) return res.status(404).json({ error: 'Review not found' });
   res.json(review);
 });
@@ -219,7 +285,7 @@ app.post('/api/reviews', (req, res) => {
   incrementReviewerLoads(data, reviewers);
 
   const review = {
-    id: uuidv4(),
+    id: generateReviewId(data),
     branch,
     merger,
     reviewers,
@@ -234,7 +300,7 @@ app.post('/api/reviews', (req, res) => {
   };
 
   data.reviews.push(review);
-  saveData(data);
+  saveData(data, `Review ${review.id} created: ${review.branch}`);
 
   res.json(review);
 });
@@ -247,7 +313,7 @@ app.delete('/api/reviews/:id', (req, res) => {
   }
 
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
 
@@ -262,14 +328,14 @@ app.delete('/api/reviews/:id', (req, res) => {
   review.deletedAt = new Date().toISOString();
   review.updatedAt = new Date().toISOString();
 
-  saveData(data);
+  saveData(data, `Review ${req.params.id} deleted by ${userName}`);
   res.json({ message: 'Review deleted', review });
 });
 
 app.post('/api/reviews/:id/approve', (req, res) => {
   const { reviewerName } = req.body;
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
   if (review.status !== 'in_review' && review.status !== 'fix_made') {
@@ -291,14 +357,14 @@ app.post('/api/reviews/:id/approve', (req, res) => {
     review.status = 'approved';
   }
 
-  saveData(data);
+  saveData(data, `Review ${req.params.id} approved by ${reviewerName}`);
   res.json(review);
 });
 
 app.post('/api/reviews/:id/disapprove', (req, res) => {
   const { reviewerName, comment } = req.body;
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
   if (review.status !== 'in_review' && review.status !== 'fix_made') {
@@ -317,13 +383,13 @@ app.post('/api/reviews/:id/disapprove', (req, res) => {
 
   decrementReviewerLoad(data, reviewerName);
 
-  saveData(data);
+  saveData(data, `Review ${req.params.id} disapproved by ${reviewerName}`);
   res.json(review);
 });
 
 app.post('/api/reviews/:id/fix-done', (req, res) => {
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
   if (review.status !== 'fix_needed') {
@@ -333,24 +399,22 @@ app.post('/api/reviews/:id/fix-done', (req, res) => {
   review.status = 'fix_made';
   review.updatedAt = new Date().toISOString();
 
-  const newReviewers = selectReviewers(data, review.reviewType, data.settings.reviewersPerRequest, review.merger);
-
-  if (newReviewers.length === 0) {
-    return res.status(400).json({ error: 'No available reviewers for re-review' });
+  for (const rv of review.reviewers) {
+    if (rv.status === 'disapproved') {
+      rv.status = 'pending';
+      rv.comment = '';
+      rv.respondedAt = null;
+    }
   }
 
-  review.reviewers = newReviewers;
-  review.approvalCount = 0;
-  incrementReviewerLoads(data, newReviewers);
-
-  saveData(data);
+  saveData(data, `Review ${req.params.id} marked fix-done`);
   res.json(review);
 });
 
 app.post('/api/reviews/:id/escalate', (req, res) => {
   const { mergerName, reason, userRole } = req.body;
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
   if (review.status !== 'fix_needed') {
@@ -378,14 +442,14 @@ app.post('/api/reviews/:id/escalate', (req, res) => {
   };
   review.updatedAt = new Date().toISOString();
 
-  saveData(data);
+  saveData(data, `Review ${req.params.id} escalated by ${mergerName}`);
   res.json(review);
 });
 
 app.post('/api/reviews/:id/escalation-decide', (req, res) => {
   const { seniorName, decision } = req.body;
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
   if (review.status !== 'escalated') {
@@ -406,14 +470,14 @@ app.post('/api/reviews/:id/escalation-decide', (req, res) => {
     }
   }
 
-  saveData(data);
+  saveData(data, `Review ${req.params.id} escalation decided: ${decision}`);
   res.json(review);
 });
 
 app.post('/api/reviews/:id/comment', (req, res) => {
   const { author, text } = req.body;
   const data = loadData();
-  const review = data.reviews.find(r => r.id === req.params.id);
+  const review = findReviewById(data, req.params.id);
 
   if (!review) return res.status(404).json({ error: 'Review not found' });
 
@@ -424,7 +488,7 @@ app.post('/api/reviews/:id/comment', (req, res) => {
   });
   review.updatedAt = new Date().toISOString();
 
-  saveData(data);
+  saveData(data, `Comment added to review ${req.params.id} by ${author}`);
   res.json(review);
 });
 
@@ -450,11 +514,62 @@ app.put('/api/reviewers/:name/role', (req, res) => {
   }
 
   reviewer.role = role;
-  saveData(data);
+  saveData(data, `Role changed for ${req.params.name} to ${role}`);
   res.json(reviewer);
 });
 
-app.post('/api/reviewers', (req, res) => {
+app.put('/api/reviewers/:name/load', (req, res) => {
+  const { load } = req.body;
+  const data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+
+  if (!reviewer) return res.status(404).json({ error: 'Reviewer not found' });
+  if (typeof load !== 'number' || load < 0) {
+    return res.status(400).json({ error: 'Load must be a non-negative number' });
+  }
+
+  reviewer.load = load;
+  saveData(data, `Load set to ${load} for ${req.params.name}`);
+  res.json(reviewer);
+});
+
+app.post('/api/reviews/manual', (req, res) => {
+  const { branch, merger, reviewType, priority, reviewers } = req.body;
+  const data = loadData();
+
+  if (!branch || !merger || !reviewType || !priority || !reviewers || !Array.isArray(reviewers)) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const reviewReviewers = reviewers.map(name => {
+    const reviewer = getReviewerByName(data, name);
+    if (!reviewer) throw new Error(`Reviewer not found: ${name}`);
+    reviewer.load = Math.min(reviewer.load + 1, 999);
+    return { name: reviewer.name, status: 'pending', notified: false };
+  });
+
+  const review = {
+    id: generateReviewId(data),
+    branch,
+    merger,
+    reviewers: reviewReviewers,
+    approvalCount: 0,
+    status: 'in_review',
+    priority,
+    reviewType,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    escalation: null,
+    comments: []
+  };
+
+  data.reviews.push(review);
+  saveData(data, `Manual review ${review.id} created: ${review.branch}`);
+
+  res.json(review);
+});
+
+app.post('/api/reviewers', async (req, res) => {
   const { name, speciality, role } = req.body;
   const data = loadData();
 
@@ -463,6 +578,7 @@ app.post('/api/reviewers', (req, res) => {
   }
 
   const finalSpeciality = isNonReviewRole(role || 'reviewer') ? 'None' : (speciality || 'Fullstack');
+  const generatedPassword = generatePassword();
 
   data.reviewers.push({
     name,
@@ -470,10 +586,12 @@ app.post('/api/reviewers', (req, res) => {
     speciality: finalSpeciality,
     role: role || 'reviewer',
     email: '',
-    password: ''
+    password: await hashPassword(generatedPassword),
+    plainPassword: generatedPassword,
+    discordId: ''
   });
 
-  saveData(data);
+  saveData(data, `User ${name} added`);
   res.json(data.reviewers);
 });
 
@@ -487,12 +605,17 @@ app.delete('/api/reviewers/:name', (req, res) => {
   }
 
   data.reviewers.splice(idx, 1);
-  saveData(data);
+  saveData(data, `User ${req.params.name} removed`);
   res.json(data.reviewers);
 });
 
 app.post('/api/reviewers/:name/password', passwordLimiter, async (req, res) => {
-  const { password } = req.body;
+  const { password, userRole } = req.body;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can set passwords' });
+  }
+
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
@@ -502,90 +625,48 @@ app.post('/api/reviewers/:name/password', passwordLimiter, async (req, res) => {
   }
 
   reviewer.password = await hashPassword(password);
+  reviewer.plainPassword = password;
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
-  saveData(data);
+  saveData(data, `Password set for ${req.params.name}`);
   res.json({ message: 'Password set successfully' });
 });
 
 app.post('/api/reviewers/:name/reset-password', passwordLimiter, async (req, res) => {
+  const { userRole } = req.body;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can reset passwords' });
+  }
+
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
   if (!reviewer) return res.status(404).json({ error: 'User not found' });
 
-  const otp = generateOTP();
-  reviewer.password = await hashPassword(otp);
-  reviewer.passwordResetToken = null;
-  reviewer.passwordResetExpiry = null;
-  saveData(data);
-
-  res.json({ message: 'Password reset', password: otp });
-});
-
-app.put('/api/reviewers/:name/change-password', passwordLimiter, async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-  const data = loadData();
-  const reviewer = getReviewerByName(data, req.params.name);
-
-  if (!reviewer) return res.status(404).json({ error: 'User not found' });
-  if (reviewer.password) {
-    const valid = await comparePassword(oldPassword, reviewer.password);
-    if (!valid) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
-    }
-  }
-  if (!newPassword || newPassword.length < 4) {
-    return res.status(400).json({ error: 'New password must be at least 4 characters' });
-  }
-
+  const newPassword = generatePassword();
   reviewer.password = await hashPassword(newPassword);
-  saveData(data);
-  res.json({ message: 'Password changed successfully' });
-});
-
-app.post('/api/reviewers/:name/generate-link', passwordLimiter, (req, res) => {
-  const data = loadData();
-  const reviewer = getReviewerByName(data, req.params.name);
-
-  if (!reviewer) return res.status(404).json({ error: 'User not found' });
-
-  const token = generateToken();
-  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  reviewer.passwordResetToken = token;
-  reviewer.passwordResetExpiry = expiry.toISOString();
-  reviewer.password = '';
-  saveData(data);
-
-  const baseUrl = req.protocol + '://' + req.get('host');
-  const link = `${baseUrl}/set-password.html?token=${token}&name=${encodeURIComponent(reviewer.name)}`;
-
-  res.json({ link, expiresAt: expiry.toISOString() });
-});
-
-app.post('/api/set-password', passwordLimiter, async (req, res) => {
-  const { token, name, password } = req.body;
-  const data = loadData();
-  const reviewer = getReviewerByName(data, name);
-
-  if (!reviewer) return res.status(404).json({ error: 'User not found' });
-  if (!reviewer.passwordResetToken || reviewer.passwordResetToken !== token) {
-    return res.status(400).json({ error: 'Invalid or expired link' });
-  }
-  if (new Date(reviewer.passwordResetExpiry) < new Date()) {
-    return res.status(400).json({ error: 'Link has expired' });
-  }
-  if (!password || password.length < 4) {
-    return res.status(400).json({ error: 'Password must be at least 4 characters' });
-  }
-
-  reviewer.password = await hashPassword(password);
+  reviewer.plainPassword = newPassword;
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
-  saveData(data);
+  saveData(data, `Password reset for ${req.params.name}`);
 
-  res.json({ message: 'Password set successfully' });
+  res.json({ message: 'Password reset', password: newPassword });
+});
+
+app.get('/api/admin/passwords', (req, res) => {
+  const { userRole } = req.query;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can view passwords' });
+  }
+
+  const data = loadData();
+  res.json(data.reviewers.map(r => ({
+    name: r.name,
+    role: r.role,
+    plainPassword: r.plainPassword || ''
+  })));
 });
 
 app.post('/api/reviewers/:name/email', (req, res) => {
@@ -596,8 +677,22 @@ app.post('/api/reviewers/:name/email', (req, res) => {
   if (!reviewer) return res.status(404).json({ error: 'User not found' });
 
   reviewer.email = email || '';
-  saveData(data);
+  saveData(data, `Email set for ${req.params.name}`);
   res.json({ message: 'Email updated', email: reviewer.email });
+});
+
+app.post('/api/reviewers/:name/unlink', (req, res) => {
+  const { userRole } = req.body;
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can unlink accounts' });
+  }
+  const data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+
+  reviewer.discordId = '';
+  saveData(data, `Discord link removed for ${req.params.name}`);
+  res.json({ message: `Discord link removed for ${reviewer.name}` });
 });
 
 app.post('/api/import-csv', (req, res) => {
@@ -643,7 +738,7 @@ app.post('/api/import-csv', (req, res) => {
   if (scrumMaster) data.reviewers.push(scrumMaster);
   if (manager) data.reviewers.push(manager);
 
-  saveData(data);
+  saveData(data, `CSV imported: ${newReviewers.length} reviewers`);
   res.json(data.reviewers);
 });
 
@@ -655,7 +750,7 @@ app.get('/api/settings', (req, res) => {
 app.put('/api/settings', (req, res) => {
   const data = loadData();
   data.settings = { ...data.settings, ...req.body };
-  saveData(data);
+  saveData(data, 'Settings updated');
   res.json(data.settings);
 });
 
@@ -666,6 +761,14 @@ app.get('/', (req, res) => {
 async function startServer() {
   const data = loadData();
   await migratePasswords(data);
+
+  try {
+    console.log('[Git] Pulling latest data from remote...');
+    await git.pull('origin', (await git.branch()).current);
+    console.log('[Git] Sync complete');
+  } catch (err) {
+    console.warn('[Git] Pull failed, proceeding with local data:', err.message);
+  }
 
   app.listen(PORT, () => {
     console.log(`\nReview Maker running at http://localhost:${PORT}`);

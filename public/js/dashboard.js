@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupNewReviewForm();
   setupAdminForms();
-  setupChangePassword();
   loadReviewers();
   loadReviews();
 });
@@ -34,13 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.removeItem('reviewMakerUser');
   window.location.href = '/login.html';
-});
-
-document.getElementById('change-pw-btn').addEventListener('click', () => {
-  document.getElementById('change-pw-modal').style.display = 'flex';
-  document.getElementById('change-pw-error').style.display = 'none';
-  document.getElementById('change-pw-success').style.display = 'none';
-  document.getElementById('change-pw-form').reset();
 });
 
 function setupTabs() {
@@ -515,41 +507,6 @@ async function addComment(id) {
   }
 }
 
-function setupChangePassword() {
-  document.getElementById('change-pw-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const errorEl = document.getElementById('change-pw-error');
-    const successEl = document.getElementById('change-pw-success');
-    errorEl.style.display = 'none';
-    successEl.style.display = 'none';
-
-    const currentPw = document.getElementById('current-pw').value;
-    const newPw = document.getElementById('new-pw').value;
-    const confirmPw = document.getElementById('confirm-pw').value;
-
-    if (newPw !== confirmPw) {
-      errorEl.textContent = 'New passwords do not match';
-      errorEl.style.display = 'block';
-      return;
-    }
-
-    try {
-      await API.changeOwnPassword(currentUser.name, currentPw, newPw);
-      successEl.textContent = 'Password changed successfully';
-      successEl.style.display = 'block';
-      document.getElementById('change-pw-form').reset();
-      setTimeout(closeChangePwModal, 1500);
-    } catch (err) {
-      errorEl.textContent = err.message;
-      errorEl.style.display = 'block';
-    }
-  });
-}
-
-function closeChangePwModal() {
-  document.getElementById('change-pw-modal').style.display = 'none';
-}
-
 function setupAdminForms() {
   document.getElementById('role-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -560,6 +517,45 @@ function setupAdminForms() {
       alert('Role updated');
       loadAdminData();
       loadReviewers();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
+  document.getElementById('load-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('load-user-select').value;
+    const load = parseInt(document.getElementById('load-input').value);
+    try {
+      await API.setLoad(name, load);
+      alert(`Load set to ${load} for ${name}`);
+      loadAdminData();
+      loadReviewers();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
+  document.getElementById('manual-review-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const branch = document.getElementById('manual-branch').value.trim();
+    const merger = document.getElementById('manual-merger').value;
+    const reviewType = document.getElementById('manual-type').value;
+    const priority = document.getElementById('manual-priority').value;
+    const selectedReviewers = Array.from(document.querySelectorAll('#manual-reviewers-list input:checked')).map(cb => cb.value);
+
+    if (selectedReviewers.length === 0) {
+      alert('Select at least one reviewer');
+      return;
+    }
+
+    try {
+      const review = await API.createManualReview(branch, merger, reviewType, priority, selectedReviewers);
+      alert(`Review ${review.id} created with reviewers: ${review.reviewers.map(r => r.name).join(', ')}`);
+      document.getElementById('manual-review-form').reset();
+      loadAdminData();
+      loadReviewers();
+      loadReviews();
     } catch (err) {
       alert(err.message);
     }
@@ -671,8 +667,10 @@ async function loadAdminData() {
     const pwSelect = document.getElementById('pw-user-select');
     const emailSelect = document.getElementById('email-user-select');
     const deleteSelect = document.getElementById('delete-review-select');
+    const loadSelect = document.getElementById('load-user-select');
+    const mergerSelect = document.getElementById('manual-merger');
 
-    [roleSelect, removeSelect, pwSelect, emailSelect].forEach(sel => sel.innerHTML = '');
+    [roleSelect, removeSelect, pwSelect, emailSelect, loadSelect].forEach(sel => sel.innerHTML = '');
 
     const nonAdmin = reviewers.filter(r => r.role !== 'admin');
 
@@ -696,6 +694,40 @@ async function loadAdminData() {
       opt4.value = r.name;
       opt4.textContent = r.name;
       emailSelect.appendChild(opt4);
+
+      const opt5 = document.createElement('option');
+      opt5.value = r.name;
+      opt5.textContent = `${r.name} (load: ${r.load})`;
+      loadSelect.appendChild(opt5);
+    });
+
+    if (loadSelect.options.length > 0) {
+      loadSelect.addEventListener('change', () => {
+        const selected = reviewers.find(r => r.name === loadSelect.value);
+        if (selected) {
+          document.getElementById('load-input').value = selected.load;
+        }
+      });
+      loadSelect.dispatchEvent(new Event('change'));
+    }
+
+    mergerSelect.innerHTML = '';
+    reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.name;
+      opt.textContent = r.name;
+      if (r.name === currentUser.name) opt.selected = true;
+      mergerSelect.appendChild(opt);
+    });
+
+    const reviewersList = document.getElementById('manual-reviewers-list');
+    reviewersList.innerHTML = '';
+    const reviewableReviewers = reviewers.filter(r => r.role === 'reviewer' || r.role === 'senior');
+    reviewableReviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;';
+      label.innerHTML = `<input type="checkbox" value="${r.name}"> ${r.name} (${r.load}/${r.speciality})`;
+      reviewersList.appendChild(label);
     });
 
     deleteSelect.innerHTML = '<option value="">-- Select review --</option>';
@@ -710,9 +742,12 @@ async function loadAdminData() {
     document.getElementById('setting-max-load').value = settings.maxLoad || 3;
 
     renderPasswordStatus(reviewers);
+    loadPasswords();
 
     if (currentUser.role === 'manager') {
       document.getElementById('admin-manage-roles').style.display = 'none';
+      document.getElementById('admin-manage-load').style.display = 'none';
+      document.getElementById('admin-manual-review').style.display = 'none';
       document.getElementById('admin-add-reviewer').style.display = 'none';
       document.getElementById('admin-passwords').style.display = 'none';
       document.getElementById('admin-emails').style.display = 'none';
@@ -722,6 +757,8 @@ async function loadAdminData() {
       document.getElementById('admin-password-status').style.display = 'block';
     } else {
       document.getElementById('admin-manage-roles').style.display = 'block';
+      document.getElementById('admin-manage-load').style.display = 'block';
+      document.getElementById('admin-manual-review').style.display = 'block';
       document.getElementById('admin-add-reviewer').style.display = 'block';
       document.getElementById('admin-passwords').style.display = 'block';
       document.getElementById('admin-emails').style.display = 'block';
@@ -746,9 +783,21 @@ function renderPasswordStatus(reviewers) {
       <td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td>
       <td>${r.hasPassword ? '<span class="status-badge approved">Yes</span>' : '<span class="status-badge pending">No</span>'}</td>
       <td>${r.email || '<span style="color: var(--text-muted);">Not set</span>'}</td>
+      <td>${r.discordId ? `<button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>` : '<span style="color: var(--text-muted);">Not linked</span>'}</td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+async function unlinkDiscord(name) {
+  if (!confirm(`Remove Discord link for ${name}? They will need to use /link again.`)) return;
+  try {
+    await API.unlinkDiscord(name);
+    alert(`Discord link removed for ${name}`);
+    loadAdminData();
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 async function adminSetPassword() {
@@ -789,8 +838,8 @@ async function adminResetPassword() {
   }
 
   try {
-    const data = await API.resetPassword(name);
-    resultEl.innerHTML = `One-time password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
+    const data = await API.resetPassword(name, currentUser.role);
+    resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
     resultEl.className = 'success-msg';
     resultEl.style.display = 'block';
     loadAdminData();
@@ -801,26 +850,33 @@ async function adminResetPassword() {
   }
 }
 
-async function adminGenerateLink() {
-  const name = document.getElementById('pw-user-select').value;
+async function loadPasswords() {
+  try {
+    const passwords = await API.getAdminPasswords(currentUser.role);
+    const tbody = document.getElementById('admin-passwords-body');
+    tbody.innerHTML = '';
+
+    passwords.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${r.name}</strong></td>
+        <td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td>
+        <td><code style="background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${r.plainPassword}</code></td>
+        <td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Failed to load passwords:', err);
+  }
+}
+
+async function adminResetPasswordByName(name) {
   const resultEl = document.getElementById('pw-result');
 
-  if (!name) {
-    resultEl.textContent = 'Select a user first';
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-    return;
-  }
-
   try {
-    const data = await API.generatePasswordLink(name);
-    resultEl.innerHTML = `
-      <p>Password link for <strong>${name}</strong> (expires: ${new Date(data.expiresAt).toLocaleString()}):</p>
-      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-        <input type="text" value="${data.link}" readonly style="flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem; color: var(--text); font-size: 0.75rem; font-family: monospace;" id="generated-link-input">
-        <button class="btn btn-sm btn-secondary" onclick="copyLink()">Copy</button>
-      </div>
-    `;
+    const data = await API.resetPassword(name, currentUser.role);
+    resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
     resultEl.className = 'success-msg';
     resultEl.style.display = 'block';
     loadAdminData();
@@ -829,13 +885,6 @@ async function adminGenerateLink() {
     resultEl.className = 'error-msg';
     resultEl.style.display = 'block';
   }
-}
-
-function copyLink() {
-  const input = document.getElementById('generated-link-input');
-  input.select();
-  document.execCommand('copy');
-  alert('Link copied to clipboard');
 }
 
 function formatStatus(status) {

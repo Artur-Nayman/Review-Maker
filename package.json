@@ -5,15 +5,22 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "bot": "node bot/index.js",
+    "bot:deploy": "node bot/deploy-commands.js",
+    "all": "concurrently \"npm run start\" \"npm run bot\""
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "body-parser": "^1.20.2",
+    "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "simple-git": "^3.36.0",
     "uuid": "^9.0.0"
   }
 }

@@ -23,12 +23,6 @@
         <span id="user-name"></span>
         <span id="user-role" class="role-badge"></span>
       </div>
-      <button id="change-pw-btn" class="btn btn-ghost" title="Change Password">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0110 0v4"/>
-        </svg>
-      </button>
       <button id="logout-btn" class="btn btn-ghost">Logout</button>
     </div>
   </header>
@@ -207,6 +201,63 @@
           </form>
         </div>
 
+        <div class="admin-section" id="admin-manage-load">
+          <h3>Set Reviewer Load</h3>
+          <form id="load-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="load-user-select">User</label>
+                <select id="load-user-select" required></select>
+              </div>
+              <div class="form-group">
+                <label for="load-input">Load</label>
+                <input type="number" id="load-input" min="0" max="999" value="0" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Set Load</button>
+          </form>
+        </div>
+
+        <div class="admin-section" id="admin-manual-review">
+          <h3>Create Manual Review</h3>
+          <form id="manual-review-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="manual-branch">Branch Name *</label>
+                <input type="text" id="manual-branch" required>
+              </div>
+              <div class="form-group">
+                <label for="manual-merger">Merger *</label>
+                <select id="manual-merger" required></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="manual-type">Review Type *</label>
+                <select id="manual-type" required>
+                  <option value="">Select type</option>
+                  <option value="frontend">Frontend</option>
+                  <option value="backend">Backend</option>
+                  <option value="fullstack">Fullstack</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="manual-priority">Priority *</label>
+                <select id="manual-priority" required>
+                  <option value="low">Low</option>
+                  <option value="mid" selected>Mid</option>
+                  <option value="imp">Important</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Select Reviewers *</label>
+              <div id="manual-reviewers-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;"></div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Create Review</button>
+          </form>
+        </div>
+
         <div class="admin-section" id="admin-add-reviewer">
           <h3>Add User</h3>
           <form id="add-reviewer-form">
@@ -253,6 +304,20 @@
         <div class="admin-section" id="admin-passwords">
           <h3>Password Management</h3>
 
+          <div class="table-wrapper" style="margin-bottom: 1.5rem;">
+            <table id="admin-passwords-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Password</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-passwords-body"></tbody>
+            </table>
+          </div>
+
           <div class="form-row" style="margin-bottom: 1rem;">
             <div class="form-group">
               <label for="pw-user-select">Select User</label>
@@ -266,8 +331,7 @@
               <input type="text" id="pw-set-input" placeholder="New password">
             </div>
             <button type="button" class="btn btn-primary" onclick="adminSetPassword()">Set</button>
-            <button type="button" class="btn btn-warning" onclick="adminResetPassword()">Generate OTP</button>
-            <button type="button" class="btn btn-secondary" onclick="adminGenerateLink()">Generate Link</button>
+            <button type="button" class="btn btn-warning" onclick="adminResetPassword()">Generate New</button>
           </div>
 
           <div id="pw-result" class="success-msg" style="display: none; margin-top: 0.75rem;"></div>
@@ -300,6 +364,7 @@
                   <th>Role</th>
                   <th>Password Set</th>
                   <th>Email</th>
+                  <th>Discord</th>
                 </tr>
               </thead>
               <tbody id="password-status-body"></tbody>
@@ -360,35 +425,6 @@
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div id="modal-body"></div>
-    </div>
-  </div>
-
-  <div id="change-pw-modal" class="modal" style="display: none;">
-    <div class="modal-backdrop" onclick="closeChangePwModal()"></div>
-    <div class="modal-content" style="max-width: 400px;">
-      <div class="modal-header">
-        <h3>Change Password</h3>
-        <button class="modal-close" onclick="closeChangePwModal()">&times;</button>
-      </div>
-      <div style="padding: 1.5rem;">
-        <div id="change-pw-error" class="error-msg" style="display: none;"></div>
-        <div id="change-pw-success" class="success-msg" style="display: none;"></div>
-        <form id="change-pw-form">
-          <div class="form-group">
-            <label>Current Password</label>
-            <input type="password" id="current-pw" required>
-          </div>
-          <div class="form-group">
-            <label>New Password</label>
-            <input type="password" id="new-pw" required minlength="4">
-          </div>
-          <div class="form-group">
-            <label>Confirm New Password</label>
-            <input type="password" id="confirm-pw" required minlength="4">
-          </div>
-          <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1rem;">Change Password</button>
-        </form>
-      </div>
     </div>
   </div>
 
