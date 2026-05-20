@@ -6,31 +6,39 @@
       "speciality": "None",
       "role": "admin",
       "email": "",
-      "password": "$2b$10$eb1g8rd1FHE87M0P9R7.WODcX0D6PkdYK9iT5xrRyl7TaL0w0HOmy"
+      "password": "$2b$10$eb1g8rd1FHE87M0P9R7.WODcX0D6PkdYK9iT5xrRyl7TaL0w0HOmy",
+      "discordId": "000000000000000001",
+      "plainPassword": "root"
     },
     {
       "name": "Reviewer01",
-      "load": 0,
+      "load": 2,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$x7R8TIRnqiBPkhgv9XKXUOsNtkKd515euVkU/3umVNrj8uCl8OgfK",
+      "discordId": "",
+      "plainPassword": "F69HKaUPzLHC"
     },
     {
       "name": "Reviewer02",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$q72ZyM5jY.j629Wu0n53ReoChUTHwwE5BlKOFh06nuyfrmj8Gxe8S",
+      "discordId": "",
+      "plainPassword": "cWzcVDpgkPFq"
     },
     {
       "name": "Reviewer03",
-      "load": 0,
+      "load": 3,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$kV1F3qMWBQ.ojYwfoUALRe/fyQ3jfYeJZajNsjHHpFITy6E7by3y2",
+      "discordId": "",
+      "plainPassword": "pTP3cqJFyL22"
     },
     {
       "name": "Reviewer04",
@@ -38,71 +46,89 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$2yRVBEtLRSyr2Kajs6U5nOWLY/Zwbci3ji9xNotzNCwU1cgoqXg1C",
+      "discordId": "",
+      "plainPassword": "vRZvJE5D8Cxa"
     },
     {
       "name": "Reviewer05",
-      "load": 1,
+      "load": 3,
       "speciality": "Fullstack",
       "role": "senior",
       "email": "",
-      "password": ""
+      "password": "$2b$10$tzGeuxkZUziNU5k.n0a08uGA6pAzavnb4422IdOODtNd/XXOfZ1CG",
+      "discordId": "",
+      "plainPassword": "ZCmJ3uVveJkA"
     },
     {
       "name": "Reviewer06",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$XAVazdPnyEMwXz5EKQ/r5eTCP0t8akSrEt6EHcLfecLOHO0u7UKu2",
+      "discordId": "",
+      "plainPassword": "DS4NhhaUUZvJ"
     },
     {
       "name": "Reviewer07",
-      "load": 1,
+      "load": 3,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$HGlFJOnUdX176QLlHi1gsuRjr25u9PeEsc.xAlc0FTc.X55RfDz9S",
+      "discordId": "",
+      "plainPassword": "gEN4MKxbxsXF"
     },
     {
       "name": "Reviewer08",
-      "load": 1,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$jeqmaJH1NBJayGaT5CV7auRZTymP1cbjHrqa/P1GVLy.id7HRpE6i",
+      "discordId": "",
+      "plainPassword": "mPmhXQ4eQS59"
     },
     {
       "name": "Reviewer09",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$m6rYelyYF9MD6E9bd1Pl3.2eBAMbqrRGj6gyN9CpBofxJhJJJ.jky",
+      "discordId": "",
+      "plainPassword": "8uNS6aHGhAAy"
     },
     {
       "name": "Reviewer10",
-      "load": 0,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$yPdK8adqMqriPzvFsRk2PuposNwF.p5DGiYeq1uwJNi66RZnbK3o6",
+      "discordId": "",
+      "plainPassword": "ULb9GV2b2KrR"
     },
     {
       "name": "Reviewer11",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$Lh5Pu1bGgEZ7jFTm6OoBdOjxR0k3llsehJf5d.tV1/0b8RW6QycOC",
+      "discordId": "",
+      "plainPassword": "wRGXT9b69cXz"
     },
     {
       "name": "Reviewer12",
-      "load": 0,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$BVO3gH08rtqjUBH/XdeAdO3Z/vrVDjnq71T/Ar5SnCgWgXQH6ERj.",
+      "discordId": "",
+      "plainPassword": "6V86Uex4yUPv"
     },
     {
       "name": "Reviewer13",
@@ -110,7 +136,9 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$Q53HT1HYH4uJrLKxU2g.9ONX0IeCXLK1g5.2eCdkrfPHfs864K7Z.",
+      "discordId": "",
+      "plainPassword": "uXNnMKKN2aq6"
     },
     {
       "name": "Reviewer14",
@@ -118,7 +146,9 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$.DlJm/eg9sS4siFmkGLhyu9NHPIcdfecX7/Bs8VbOFIrtwI/AdjbO",
+      "discordId": "",
+      "plainPassword": "Bsu7eKkx5pf5"
     },
     {
       "name": "Reviewer15",
@@ -126,15 +156,19 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$nzj67Af46NsFqPijaRe1g.jFDyD9dWUfr0RLx32Okh3YkXSKbTmCy",
+      "discordId": "",
+      "plainPassword": "efyT5D55fKLG"
     },
     {
       "name": "Reviewer16",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6",
+      "discordId": "000000000000000015",
+      "plainPassword": "q96TCQzVjFju"
     },
     {
       "name": "Minna",
@@ -142,7 +176,9 @@
       "speciality": "None",
       "role": "scrum_master",
       "email": "",
-      "password": ""
+      "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa",
+      "discordId": "",
+      "plainPassword": "pK4QreMDKTLf"
     }
   ],
   "reviews": [
@@ -168,11 +204,356 @@
         }
       ],
       "approvalCount": 0,
-      "status": "in_review",
+      "status": "deleted",
       "priority": "mid",
       "reviewType": "fullstack",
       "createdAt": "2026-05-18T12:58:41.219Z",
-      "updatedAt": "2026-05-18T12:58:41.219Z",
+      "updatedAt": "2026-05-20T09:21:22.543Z",
+      "escalation": null,
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-20T09:21:22.543Z"
+    },
+    {
+      "id": "f54e6b5e-ac72-4548-b796-cd9e7ac0313e",
+      "branch": "branch",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer03",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer10",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer12",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:03:39.071Z",
+      "updatedAt": "2026-05-20T09:03:39.071Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "127bb09c-2ef5-47f4-a5ce-3ba35968b655",
+      "branch": "feat/something",
+      "merger": "Reviewer16",
+      "reviewers": [
+        {
+          "name": "Reviewer01",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer02",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer06",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "low",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-20T09:18:22.910Z",
+      "updatedAt": "2026-05-20T09:18:22.916Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "8f3085b9-575d-4500-8073-7d6f0b09f7b8",
+      "branch": "bugfix/usability",
+      "merger": "Reviewer16",
+      "reviewers": [
+        {
+          "name": "Reviewer09",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer11",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer01",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "imp",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-20T09:18:49.855Z",
+      "updatedAt": "2026-05-20T09:18:49.855Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "94e14676-a694-48f8-9dae-8b911e64ca49",
+      "branch": "bhjdsghhsfsd",
+      "merger": "Reviewer16",
+      "reviewers": [
+        {
+          "name": "Reviewer02",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer03",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer05",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "deleted",
+      "priority": "low",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-20T09:21:09.031Z",
+      "updatedAt": "2026-05-20T09:21:19.910Z",
+      "escalation": null,
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-20T09:21:19.910Z"
+    },
+    {
+      "id": "60265ba5-3e3e-4c98-8a1a-ce62fc7068a3",
+      "branch": "bbb",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer05",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer07",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer08",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "deleted",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:22:54.395Z",
+      "updatedAt": "2026-05-20T09:31:59.959Z",
+      "escalation": null,
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-20T09:31:59.959Z"
+    },
+    {
+      "id": "3d595d26-06f1-4420-926c-a9d41fb29a2f",
+      "branch": "bbb",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer16",
+          "status": "approved",
+          "notified": false,
+          "respondedAt": "2026-05-20T09:23:54.853Z"
+        },
+        {
+          "name": "Reviewer03",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer05",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 1,
+      "status": "in_review",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:23:24.301Z",
+      "updatedAt": "2026-05-20T09:23:54.853Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "5e08f2c1-0092-4410-a31d-97ec50118c7a",
+      "branch": "aawda",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer16",
+          "status": "approved",
+          "notified": false,
+          "respondedAt": "2026-05-20T09:29:09.647Z"
+        },
+        {
+          "name": "Reviewer10",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer12",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 1,
+      "status": "deleted",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:26:51.711Z",
+      "updatedAt": "2026-05-20T09:31:39.530Z",
+      "escalation": null,
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-20T09:31:39.530Z"
+    },
+    {
+      "id": "REV-9",
+      "branch": "dddd",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer16",
+          "status": "approved",
+          "notified": false,
+          "respondedAt": "2026-05-20T09:50:14.593Z"
+        },
+        {
+          "name": "Reviewer05",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer07",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 1,
+      "status": "in_review",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:49:21.144Z",
+      "updatedAt": "2026-05-20T09:50:14.593Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "REV-10",
+      "branch": "dddd",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer16",
+          "status": "approved",
+          "notified": false,
+          "comment": "",
+          "respondedAt": "2026-05-20T09:51:49.158Z"
+        },
+        {
+          "name": "Reviewer08",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer10",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 1,
+      "status": "fix_made",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:50:23.048Z",
+      "updatedAt": "2026-05-20T09:51:49.158Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "REV-11",
+      "branch": "adwasdsd",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer16",
+          "status": "approved",
+          "notified": false,
+          "comment": "",
+          "respondedAt": "2026-05-20T10:01:05.428Z"
+        },
+        {
+          "name": "Reviewer12",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer03",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 1,
+      "status": "fix_made",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T09:59:55.253Z",
+      "updatedAt": "2026-05-20T10:01:05.428Z",
+      "escalation": null,
+      "comments": []
+    },
+    {
+      "id": "REV-12",
+      "branch": "b b",
+      "merger": "Admin",
+      "reviewers": [
+        {
+          "name": "Reviewer16",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer05",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer07",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "imp",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-20T11:09:33.434Z",
+      "updatedAt": "2026-05-20T11:09:33.435Z",
       "escalation": null,
       "comments": []
     }
@@ -180,6 +561,7 @@
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
-    "adminPassword": "root"
+    "adminPassword": "root",
+    "nextReviewNumber": 13
   }
 }
