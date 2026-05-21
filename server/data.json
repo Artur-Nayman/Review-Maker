@@ -179,16 +179,6 @@
       "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa",
       "discordId": "000000000000000016",
       "plainPassword": "pK4QreMDKTLf"
-    },
-    {
-      "name": "Reviewer17",
-      "load": 0,
-      "speciality": "Fullstack",
-      "role": "reviewer",
-      "email": "",
-      "password": "$2b$10$3pe598hwj3Ttv4.F4QuWTuBmKFyVZG2oZPyQrfi2lqIcxTigSOIV6",
-      "plainPassword": "hS77pwWZRMEE",
-      "discordId": "000000000000000017"
     }
   ],
   "reviews": [
