@@ -593,13 +593,15 @@
         }
       ],
       "approvalCount": 0,
-      "status": "in_review",
+      "status": "deleted",
       "priority": "imp",
       "reviewType": "fullstack",
       "createdAt": "2026-05-21T08:07:05.667Z",
-      "updatedAt": "2026-05-21T08:07:05.711Z",
+      "updatedAt": "2026-05-21T10:04:51.789Z",
       "escalation": null,
-      "comments": []
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-21T10:04:51.789Z"
     },
     {
       "id": "REV-14",
