@@ -179,6 +179,16 @@
       "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa",
       "discordId": "000000000000000016",
       "plainPassword": "pK4QreMDKTLf"
+    },
+    {
+      "name": "Reviewer17",
+      "load": 0,
+      "speciality": "Frontend",
+      "role": "reviewer",
+      "email": "",
+      "password": "$2b$10$UeDMwqr3j/NPj2VBud7pxeMP7Ac92iL803.s8/OnBei/sMuJBYT0.",
+      "plainPassword": "hYHxeQNcqbED",
+      "discordId": ""
     }
   ],
   "reviews": [
