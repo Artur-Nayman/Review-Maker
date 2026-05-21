@@ -623,13 +623,15 @@
         }
       ],
       "approvalCount": 0,
-      "status": "in_review",
+      "status": "deleted",
       "priority": "mid",
       "reviewType": "frontend",
       "createdAt": "2026-05-21T08:23:03.978Z",
-      "updatedAt": "2026-05-21T08:23:03.983Z",
+      "updatedAt": "2026-05-21T10:04:45.063Z",
       "escalation": null,
-      "comments": []
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-21T10:04:45.063Z"
     },
     {
       "id": "REV-15",
