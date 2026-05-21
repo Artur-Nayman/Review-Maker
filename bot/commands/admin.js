@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { loadData, saveData, getReviewerByName, generatePassword } = require('../utils/data');
 const { createPasswordsEmbed, createSuccessEmbed, createErrorEmbed, createReviewersEmbed } = require('../utils/embeds');
 
