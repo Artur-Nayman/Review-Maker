@@ -112,7 +112,7 @@
     },
     {
       "name": "Reviewer11",
-      "load": 1,
+      "load": 0,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
