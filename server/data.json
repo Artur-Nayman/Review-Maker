@@ -501,13 +501,15 @@
         }
       ],
       "approvalCount": 1,
-      "status": "fix_made",
+      "status": "deleted",
       "priority": "imp",
       "reviewType": "fullstack",
       "createdAt": "2026-05-20T09:50:23.048Z",
-      "updatedAt": "2026-05-20T09:51:49.158Z",
+      "updatedAt": "2026-05-21T10:04:57.820Z",
       "escalation": null,
-      "comments": []
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-21T10:04:57.820Z"
     },
     {
       "id": "REV-11",
