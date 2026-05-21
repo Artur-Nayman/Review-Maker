@@ -42,7 +42,7 @@
     },
     {
       "name": "Reviewer04",
-      "load": 1,
+      "load": 0,
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
@@ -653,13 +653,15 @@
         }
       ],
       "approvalCount": 0,
-      "status": "in_review",
+      "status": "deleted",
       "priority": "imp",
       "reviewType": "backend",
       "createdAt": "2026-05-21T09:57:52.019Z",
-      "updatedAt": "2026-05-21T09:57:52.019Z",
+      "updatedAt": "2026-05-21T10:04:42.610Z",
       "escalation": null,
-      "comments": []
+      "comments": [],
+      "deletedBy": "Admin",
+      "deletedAt": "2026-05-21T10:04:42.610Z"
     }
   ],
   "settings": {
