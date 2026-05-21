@@ -32,7 +32,7 @@
     },
     {
       "name": "Reviewer03",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
@@ -42,7 +42,7 @@
     },
     {
       "name": "Reviewer04",
-      "load": 0,
+      "load": 1,
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
@@ -72,7 +72,7 @@
     },
     {
       "name": "Reviewer07",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
@@ -626,12 +626,42 @@
       "updatedAt": "2026-05-21T08:23:03.983Z",
       "escalation": null,
       "comments": []
+    },
+    {
+      "id": "REV-15",
+      "branch": "feat/miika-all-mighty-playground",
+      "merger": "Reviewer05",
+      "reviewers": [
+        {
+          "name": "Reviewer03",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer04",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer07",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "imp",
+      "reviewType": "backend",
+      "createdAt": "2026-05-21T09:57:52.019Z",
+      "updatedAt": "2026-05-21T09:57:52.019Z",
+      "escalation": null,
+      "comments": []
     }
   ],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
     "adminPassword": "root",
-    "nextReviewNumber": 15
+    "nextReviewNumber": 16
   }
 }
