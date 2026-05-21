@@ -22,7 +22,7 @@
     },
     {
       "name": "Reviewer02",
-      "load": 1,
+      "load": 2,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
@@ -62,7 +62,7 @@
     },
     {
       "name": "Reviewer06",
-      "load": 1,
+      "load": 2,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
@@ -92,7 +92,7 @@
     },
     {
       "name": "Reviewer09",
-      "load": 1,
+      "load": 2,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
@@ -586,12 +586,42 @@
       "updatedAt": "2026-05-21T08:07:05.711Z",
       "escalation": null,
       "comments": []
+    },
+    {
+      "id": "REV-14",
+      "branch": "feat/new-ui",
+      "merger": "Reviewer16",
+      "reviewers": [
+        {
+          "name": "Reviewer02",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer06",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer09",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-21T08:23:03.978Z",
+      "updatedAt": "2026-05-21T08:23:03.983Z",
+      "escalation": null,
+      "comments": []
     }
   ],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
     "adminPassword": "root",
-    "nextReviewNumber": 14
+    "nextReviewNumber": 15
   }
 }
