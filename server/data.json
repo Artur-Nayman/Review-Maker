@@ -12,7 +12,7 @@
     },
     {
       "name": "Reviewer01",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
@@ -22,7 +22,7 @@
     },
     {
       "name": "Reviewer02",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
@@ -32,7 +32,7 @@
     },
     {
       "name": "Reviewer03",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
@@ -672,12 +672,42 @@
       "comments": [],
       "deletedBy": "Admin",
       "deletedAt": "2026-05-21T10:04:42.610Z"
+    },
+    {
+      "id": "REV-16",
+      "branch": "feature/working-hours-frontend",
+      "merger": "Reviewer11",
+      "reviewers": [
+        {
+          "name": "Reviewer01",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer02",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer03",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-22T06:10:39.488Z",
+      "updatedAt": "2026-05-22T06:10:39.488Z",
+      "escalation": null,
+      "comments": []
     }
   ],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
     "adminPassword": "root",
-    "nextReviewNumber": 16
+    "nextReviewNumber": 17
   }
 }
