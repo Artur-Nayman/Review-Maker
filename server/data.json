@@ -52,7 +52,7 @@
     },
     {
       "name": "Reviewer05",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "senior",
       "email": "",
@@ -62,7 +62,7 @@
     },
     {
       "name": "Reviewer06",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
@@ -72,7 +72,7 @@
     },
     {
       "name": "Reviewer07",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
@@ -702,12 +702,42 @@
       "updatedAt": "2026-05-22T06:10:39.488Z",
       "escalation": null,
       "comments": []
+    },
+    {
+      "id": "REV-17",
+      "branch": "bugfix/layout shift prevention",
+      "merger": "Reviewer01",
+      "reviewers": [
+        {
+          "name": "Reviewer05",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer06",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer07",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-22T06:11:08.870Z",
+      "updatedAt": "2026-05-22T06:11:08.870Z",
+      "escalation": null,
+      "comments": []
     }
   ],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
     "adminPassword": "root",
-    "nextReviewNumber": 17
+    "nextReviewNumber": 18
   }
 }
