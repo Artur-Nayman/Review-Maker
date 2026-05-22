@@ -775,6 +775,16 @@ async function startServer() {
     console.log(`Default admin: Admin / root\n`);
     console.log(`Rate limiting: 5 login attempts per 15 minutes\n`);
   });
+
+  // Auto-pull latest data from GitHub every 5 minutes
+  setInterval(async () => {
+    try {
+      await git.pull('origin', (await git.branch()).current);
+      console.log('[Auto-Pull] Synced with GitHub');
+    } catch (err) {
+      console.error('[Auto-Pull] Pull failed:', err.message);
+    }
+  }, 5 * 60 * 1000);
 }
 
 startServer();

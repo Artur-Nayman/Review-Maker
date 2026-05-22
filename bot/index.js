@@ -6,6 +6,9 @@ const { getReviewerByDiscordId, loadData, saveData } = require('./utils/data');
 const { approveReview, disapproveReview, getReviewById } = require('./utils/reviews');
 const { createReviewEmbed, createErrorEmbed, createSuccessEmbed, getReviewerMention } = require('./utils/embeds');
 
+const simpleGit = require('simple-git');
+const git = simpleGit(path.join(__dirname, '..'));
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
@@ -27,6 +30,18 @@ for (const file of commandFiles) {
 client.on('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}`);
   console.log(`Bot is in ${client.guilds.cache.size} servers`);
+
+  // Auto-pull latest data from GitHub every 5 minutes
+  async function autoPull() {
+    try {
+      await git.pull('origin', (await git.branch()).current);
+      console.log('[Auto-Pull] Synced with GitHub');
+    } catch (err) {
+      console.error('[Auto-Pull] Pull failed:', err.message);
+    }
+  }
+  autoPull();
+  setInterval(autoPull, 5 * 60 * 1000);
 });
 
 client.on('interactionCreate', async interaction => {
