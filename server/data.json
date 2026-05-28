@@ -373,7 +373,7 @@
         }
       ],
       "approvalCount": 0,
-      "status": "in_review",
+      "status": "deleted",
       "priority": "low",
       "reviewType": "frontend",
       "createdAt": "2026-05-20T09:18:22.910Z",
