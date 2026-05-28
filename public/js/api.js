@@ -27,6 +27,17 @@ const API = {
     return data;
   },
 
+  async patch(path, body) {
+    const res = await fetch(path, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `PATCH ${path} failed: ${res.status}`);
+    return data;
+  },
+
   async delete(path, body) {
     const res = await fetch(path, {
       method: 'DELETE',
@@ -136,5 +147,13 @@ const API = {
 
   async unlinkDiscord(name) {
     return this.post(`/api/reviewers/${name}/unlink`, { userRole: currentUser?.role || 'admin' });
+  },
+
+  async updateReviewStatus(id, status) {
+    return this.patch(`/api/reviews/${id}/status`, { status });
+  },
+
+  async updateReviewer(name, updates) {
+    return this.patch(`/api/reviewers/${name}/reviewer`, updates);
   }
 };
