@@ -8,7 +8,12 @@
       "email": "",
       "password": "$2b$10$eb1g8rd1FHE87M0P9R7.WODcX0D6PkdYK9iT5xrRyl7TaL0w0HOmy",
       "discordId": "000000000000000001",
-      "plainPassword": "root"
+      "plainPassword": "root",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer01",
@@ -18,7 +23,12 @@
       "email": "",
       "password": "$2b$10$x7R8TIRnqiBPkhgv9XKXUOsNtkKd515euVkU/3umVNrj8uCl8OgfK",
       "discordId": "",
-      "plainPassword": "F69HKaUPzLHC"
+      "plainPassword": "F69HKaUPzLHC",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer02",
@@ -28,7 +38,12 @@
       "email": "",
       "password": "$2b$10$q72ZyM5jY.j629Wu0n53ReoChUTHwwE5BlKOFh06nuyfrmj8Gxe8S",
       "discordId": "",
-      "plainPassword": "cWzcVDpgkPFq"
+      "plainPassword": "cWzcVDpgkPFq",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer03",
@@ -38,7 +53,12 @@
       "email": "",
       "password": "$2b$10$kV1F3qMWBQ.ojYwfoUALRe/fyQ3jfYeJZajNsjHHpFITy6E7by3y2",
       "discordId": "000000000000000004",
-      "plainPassword": "pTP3cqJFyL22"
+      "plainPassword": "pTP3cqJFyL22",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer04",
@@ -48,7 +68,12 @@
       "email": "",
       "password": "$2b$10$2yRVBEtLRSyr2Kajs6U5nOWLY/Zwbci3ji9xNotzNCwU1cgoqXg1C",
       "discordId": "",
-      "plainPassword": "vRZvJE5D8Cxa"
+      "plainPassword": "vRZvJE5D8Cxa",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer05",
@@ -58,7 +83,12 @@
       "email": "",
       "password": "$2b$10$tzGeuxkZUziNU5k.n0a08uGA6pAzavnb4422IdOODtNd/XXOfZ1CG",
       "discordId": "000000000000000006",
-      "plainPassword": "ZCmJ3uVveJkA"
+      "plainPassword": "ZCmJ3uVveJkA",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer06",
@@ -68,7 +98,12 @@
       "email": "",
       "password": "$2b$10$XAVazdPnyEMwXz5EKQ/r5eTCP0t8akSrEt6EHcLfecLOHO0u7UKu2",
       "discordId": "",
-      "plainPassword": "DS4NhhaUUZvJ"
+      "plainPassword": "DS4NhhaUUZvJ",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer07",
@@ -78,7 +113,12 @@
       "email": "",
       "password": "$2b$10$HGlFJOnUdX176QLlHi1gsuRjr25u9PeEsc.xAlc0FTc.X55RfDz9S",
       "discordId": "",
-      "plainPassword": "gEN4MKxbxsXF"
+      "plainPassword": "gEN4MKxbxsXF",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer08",
@@ -88,7 +128,12 @@
       "email": "",
       "password": "$2b$10$jeqmaJH1NBJayGaT5CV7auRZTymP1cbjHrqa/P1GVLy.id7HRpE6i",
       "discordId": "",
-      "plainPassword": "mPmhXQ4eQS59"
+      "plainPassword": "mPmhXQ4eQS59",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer09",
@@ -98,7 +143,12 @@
       "email": "",
       "password": "$2b$10$m6rYelyYF9MD6E9bd1Pl3.2eBAMbqrRGj6gyN9CpBofxJhJJJ.jky",
       "discordId": "",
-      "plainPassword": "8uNS6aHGhAAy"
+      "plainPassword": "8uNS6aHGhAAy",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer10",
@@ -108,7 +158,12 @@
       "email": "",
       "password": "$2b$10$yPdK8adqMqriPzvFsRk2PuposNwF.p5DGiYeq1uwJNi66RZnbK3o6",
       "discordId": "000000000000000011",
-      "plainPassword": "ULb9GV2b2KrR"
+      "plainPassword": "ULb9GV2b2KrR",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer11",
@@ -118,7 +173,12 @@
       "email": "",
       "password": "$2b$10$Lh5Pu1bGgEZ7jFTm6OoBdOjxR0k3llsehJf5d.tV1/0b8RW6QycOC",
       "discordId": "",
-      "plainPassword": "wRGXT9b69cXz"
+      "plainPassword": "wRGXT9b69cXz",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer12",
@@ -128,7 +188,12 @@
       "email": "",
       "password": "$2b$10$BVO3gH08rtqjUBH/XdeAdO3Z/vrVDjnq71T/Ar5SnCgWgXQH6ERj.",
       "discordId": "",
-      "plainPassword": "6V86Uex4yUPv"
+      "plainPassword": "6V86Uex4yUPv",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer13",
@@ -138,7 +203,12 @@
       "email": "",
       "password": "$2b$10$Q53HT1HYH4uJrLKxU2g.9ONX0IeCXLK1g5.2eCdkrfPHfs864K7Z.",
       "discordId": "",
-      "plainPassword": "uXNnMKKN2aq6"
+      "plainPassword": "uXNnMKKN2aq6",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer14",
@@ -148,7 +218,12 @@
       "email": "",
       "password": "$2b$10$.DlJm/eg9sS4siFmkGLhyu9NHPIcdfecX7/Bs8VbOFIrtwI/AdjbO",
       "discordId": "",
-      "plainPassword": "Bsu7eKkx5pf5"
+      "plainPassword": "Bsu7eKkx5pf5",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer15",
@@ -158,7 +233,12 @@
       "email": "",
       "password": "$2b$10$nzj67Af46NsFqPijaRe1g.jFDyD9dWUfr0RLx32Okh3YkXSKbTmCy",
       "discordId": "",
-      "plainPassword": "efyT5D55fKLG"
+      "plainPassword": "efyT5D55fKLG",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer16",
@@ -168,7 +248,12 @@
       "email": "",
       "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6",
       "discordId": "000000000000000015",
-      "plainPassword": "q96TCQzVjFju"
+      "plainPassword": "q96TCQzVjFju",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Minna",
@@ -178,7 +263,12 @@
       "email": "",
       "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa",
       "discordId": "000000000000000016",
-      "plainPassword": "pK4QreMDKTLf"
+      "plainPassword": "pK4QreMDKTLf",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     },
     {
       "name": "Reviewer17",
@@ -188,7 +278,12 @@
       "email": "",
       "password": "$2b$10$UeDMwqr3j/NPj2VBud7pxeMP7Ac92iL803.s8/OnBei/sMuJBYT0.",
       "plainPassword": "hYHxeQNcqbED",
-      "discordId": "000000000000000017"
+      "discordId": "000000000000000017",
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T15:03:39.911Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1
     }
   ],
   "reviews": [

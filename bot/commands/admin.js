@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const bcrypt = require('bcryptjs');
-const { loadData, saveData, getReviewerByName, generatePassword } = require('../utils/data');
-const { createPasswordsEmbed, createSuccessEmbed, createErrorEmbed, createReviewersEmbed } = require('../utils/embeds');
+const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity } = require('../utils/data');
+const { createPasswordsEmbed, createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -68,10 +68,34 @@ module.exports = {
     )
     .addSubcommand(subcommand =>
       subcommand
+        .setName('workload')
+        .setDescription('Show detailed reviewer workload table')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('dashboard')
+        .setDescription('Show review dashboard summary')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
         .setName('set-load')
         .setDescription('Set a reviewer load manually')
         .addStringOption(opt => opt.setName('user').setDescription('User name').setRequired(true))
         .addIntegerOption(opt => opt.setName('load').setDescription('New load value').setRequired(true).setMinValue(0).setMaxValue(999))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('set-weekly')
+        .setDescription('Set weekly review cap for a reviewer')
+        .addStringOption(opt => opt.setName('user').setDescription('User name').setRequired(true))
+        .addIntegerOption(opt => opt.setName('cap').setDescription('New weekly cap').setRequired(true).setMinValue(1).setMaxValue(20))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('settings')
+        .setDescription('View or edit settings')
+        .addStringOption(opt => opt.setName('key').setDescription('Setting key (optional — omit to view all)'))
+        .addStringOption(opt => opt.setName('value').setDescription('New value (omit to view current)'))
     )
     .addSubcommand(subcommand =>
       subcommand
@@ -162,6 +186,11 @@ module.exports = {
         data.reviewers.push({
           name,
           load: 0,
+          weeklyCount: 0,
+          weeklyResetAt: new Date().toISOString(),
+          currentLargeReview: false,
+          maxActiveReviews: data.settings.maxWeeklyReviews || 5,
+          maxLargeSimultaneous: data.settings.maxLargeSimultaneous || 1,
           speciality: finalSpeciality,
           role,
           email: '',
@@ -233,6 +262,16 @@ module.exports = {
         return interaction.reply({ embeds: [embed] });
       }
 
+      case 'workload': {
+        const embed = createWorkloadEmbed(data.reviewers, data.settings);
+        return interaction.reply({ embeds: [embed] });
+      }
+
+      case 'dashboard': {
+        const embed = createDashboardEmbed(data);
+        return interaction.reply({ embeds: [embed] });
+      }
+
       case 'set-load': {
         const name = interaction.options.getString('user');
         const load = interaction.options.getInteger('load');
@@ -248,6 +287,53 @@ module.exports = {
         return interaction.reply({
           embeds: [createSuccessEmbed(`Load for **${name}** set to **${load}**`)]
         });
+      }
+
+      case 'set-weekly': {
+        const name = interaction.options.getString('user');
+        const cap = interaction.options.getInteger('cap');
+        const reviewer = getReviewerByName(data, name);
+
+        if (!reviewer) {
+          return interaction.reply({ embeds: [createErrorEmbed('User not found')], ephemeral: true });
+        }
+
+        reviewer.maxActiveReviews = cap;
+        saveData(data, "Bot admin action");
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Weekly review cap for **${name}** set to **${cap}**`)]
+        });
+      }
+
+      case 'settings': {
+        const key = interaction.options.getString('key');
+        const value = interaction.options.getString('value');
+
+        if (key && value) {
+          const numValue = parseInt(value);
+          if (!isNaN(numValue)) {
+            data.settings[key] = numValue;
+          } else if (value === 'true') {
+            data.settings[key] = true;
+          } else if (value === 'false') {
+            data.settings[key] = false;
+          } else {
+            data.settings[key] = value;
+          }
+          saveData(data, "Bot admin action");
+          return interaction.reply({
+            embeds: [createSuccessEmbed(`Setting **${key}** changed to \`${data.settings[key]}\``)]
+          });
+        }
+
+        let desc = '```\n';
+        for (const [k, v] of Object.entries(data.settings)) {
+          if (k === 'adminPassword') continue;
+          desc += `${k.padEnd(30)} ${v}\n`;
+        }
+        desc += '```\nUse `/admin settings key:value` to change.';
+        return interaction.reply({ content: desc, ephemeral: true });
       }
 
       case 'unlink': {
@@ -272,7 +358,3 @@ module.exports = {
     }
   }
 };
-
-function getReviewerByDiscordId(data, discordId) {
-  return data.reviewers.find(r => r.discordId === discordId);
-}

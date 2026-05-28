@@ -2,12 +2,14 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { getReviewerByDiscordId, loadData, saveData } = require('./utils/data');
-const { approveReview, disapproveReview, getReviewById } = require('./utils/reviews');
+const { getReviewerByDiscordId, loadData, saveData, migrateReviewerFields, determineReviewSize } = require('./utils/data');
+const { approveReview, disapproveReview, getReviewById, incrementReviewerLoads } = require('./utils/reviews');
 const { createReviewEmbed, createErrorEmbed, createSuccessEmbed, getReviewerMention } = require('./utils/embeds');
 
 const simpleGit = require('simple-git');
 const git = simpleGit(path.join(__dirname, '..'));
+
+let isGitBusy = false;
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -27,17 +29,39 @@ for (const file of commandFiles) {
   }
 }
 
+function withTimeout(promise, ms = 30000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`Git operation timed out after ${ms}ms`)), ms))
+  ]);
+}
+
 client.on('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}`);
   console.log(`Bot is in ${client.guilds.cache.size} servers`);
 
-  // Auto-pull latest data from GitHub every 5 minutes
+  // Migrate reviewer fields on startup
+  try {
+    const data = loadData();
+    migrateReviewerFields(data);
+  } catch (err) {
+    console.error('[Startup] Migration failed:', err.message);
+  }
+
+  // Auto-pull with safety check
   async function autoPull() {
+    if (isGitBusy) {
+      console.log('[Auto-Pull] Skipped — git in use');
+      return;
+    }
+    isGitBusy = true;
     try {
-      await git.pull('origin', (await git.branch()).current);
+      await withTimeout(git.pull('origin', (await git.branch()).current));
       console.log('[Auto-Pull] Synced with GitHub');
     } catch (err) {
       console.error('[Auto-Pull] Pull failed:', err.message);
+    } finally {
+      isGitBusy = false;
     }
   }
   autoPull();
@@ -200,9 +224,10 @@ async function handleFixDoneNotify(interaction) {
 
 async function handleManualReview(interaction) {
   const parts = interaction.customId.split('_');
-  const branch = parts.slice(1, -2).join('_');
-  const reviewType = parts[parts.length - 2];
-  const priority = parts[parts.length - 1];
+  const size = parts[parts.length - 1];
+  const priority = parts[parts.length - 2];
+  const reviewType = parts[parts.length - 3];
+  const branch = parts.slice(1, -3).join('_');
 
   const data = loadData();
   const selectedReviewers = interaction.values;
@@ -212,7 +237,11 @@ async function handleManualReview(interaction) {
 
   const reviewReviewers = selectedReviewers.map(name => {
     const reviewer = data.reviewers.find(r => r.name === name);
-    if (reviewer) reviewer.load = Math.min(reviewer.load + 1, 999);
+    if (reviewer) {
+      reviewer.load = Math.min(reviewer.load + 1, 999);
+      reviewer.weeklyCount = (reviewer.weeklyCount || 0) + 1;
+      if (size === 'large') reviewer.currentLargeReview = true;
+    }
     return { name, status: 'pending', notified: false };
   });
 
@@ -223,12 +252,14 @@ async function handleManualReview(interaction) {
   const review = {
     id: reviewId,
     branch,
+    reviewType,
+    size: size || 'medium',
+    commits: [],
     merger,
     reviewers: reviewReviewers,
     approvalCount: 0,
     status: 'in_review',
     priority,
-    reviewType,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     escalation: null,
