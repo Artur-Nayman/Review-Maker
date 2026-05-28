@@ -74,7 +74,6 @@
           <button type="submit" class="btn btn-primary">Create Review Request</button>
         </form>
       </div>
-
       <div id="created-review" class="card" style="display: none;">
         <h3>Review Created</h3>
         <div id="created-review-details"></div>
@@ -88,22 +87,12 @@
         <div class="table-wrapper">
           <table id="active-reviews-table">
             <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Merger</th>
-                <th>Reviewers</th>
-                <th>Approvals</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Status</th><th>Priority</th><th>Actions</th></tr>
             </thead>
             <tbody id="active-reviews-body"></tbody>
           </table>
         </div>
-        <div id="no-active-reviews" class="empty-state" style="display: none;">
-          <p>No active reviews</p>
-        </div>
+        <div id="no-active-reviews" class="empty-state" style="display: none;"><p>No active reviews</p></div>
       </div>
     </section>
 
@@ -113,22 +102,12 @@
         <div class="table-wrapper">
           <table id="my-reviews-table">
             <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Role</th>
-                <th>Reviewers</th>
-                <th>Approvals</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Role</th><th>Reviewers</th><th>Approvals</th><th>Status</th><th>Priority</th><th>Actions</th></tr>
             </thead>
             <tbody id="my-reviews-body"></tbody>
           </table>
         </div>
-        <div id="no-my-reviews" class="empty-state" style="display: none;">
-          <p>No reviews assigned to you</p>
-        </div>
+        <div id="no-my-reviews" class="empty-state" style="display: none;"><p>No reviews assigned to you</p></div>
       </div>
     </section>
 
@@ -138,9 +117,7 @@
         <div class="table-wrapper">
           <table id="all-reviews-table">
             <thead>
-              <tr>
-                <th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Priority</th><th>Size</th><th>Status</th><th>Created</th><th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Priority</th><th>Size</th><th>Status</th><th>Created</th><th>Actions</th></tr>
             </thead>
             <tbody id="all-reviews-body"></tbody>
           </table>
@@ -155,13 +132,7 @@
         <div class="table-wrapper">
           <table id="reviewers-table">
             <thead>
-              <tr>
-                <th>Name</th>
-                <th>Speciality</th>
-                <th>Role</th>
-                <th>Current Load</th>
-                <th>Capacity</th>
-              </tr>
+              <tr><th>Name</th><th>Speciality</th><th>Role</th><th>Current Load</th><th>Capacity</th><th>Actions</th></tr>
             </thead>
             <tbody id="reviewers-body"></tbody>
           </table>
@@ -175,27 +146,17 @@
         <div class="table-wrapper">
           <table id="history-table">
             <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Merger</th>
-                <th>Reviewers</th>
-                <th>Result</th>
-                <th>Priority</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Result</th><th>Priority</th><th>Created</th><th>Actions</th></tr>
             </thead>
             <tbody id="history-body"></tbody>
           </table>
         </div>
-        <div id="no-history" class="empty-state" style="display: none;">
-          <p>No review history in the last 30 days</p>
-        </div>
+        <div id="no-history" class="empty-state" style="display: none;"><p>No review history</p></div>
       </div>
     </section>
 
     <section id="tab-admin" class="tab-content">
-      <div class="card">
+      <div class="card full-width">
         <h2>Admin Panel</h2>
 
         <div class="admin-section" id="admin-manage-roles">
@@ -238,114 +199,21 @@
           </form>
         </div>
 
-        <div class="admin-section" id="admin-manual-review">
-          <h3>Create Manual Review</h3>
-          <form id="manual-review-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="manual-branch">Branch Name *</label>
-                <input type="text" id="manual-branch" required>
-              </div>
-              <div class="form-group">
-                <label for="manual-merger">Merger *</label>
-                <select id="manual-merger" required></select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="manual-type">Review Type *</label>
-                <select id="manual-type" required>
-                  <option value="">Select type</option>
-                  <option value="frontend">Frontend</option>
-                  <option value="backend">Backend</option>
-                  <option value="fullstack">Fullstack</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="manual-priority">Priority *</label>
-                <select id="manual-priority" required>
-                  <option value="low">Low</option>
-                  <option value="mid" selected>Mid</option>
-                  <option value="imp">Important</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Select Reviewers *</label>
-              <div id="manual-reviewers-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;"></div>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Create Review</button>
-          </form>
-        </div>
-
-        <div class="admin-section" id="admin-add-reviewer">
-          <h3>Add User</h3>
-          <form id="add-reviewer-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="add-name">Name *</label>
-                <input type="text" id="add-name" required>
-              </div>
-              <div class="form-group">
-                <label for="add-speciality">Speciality</label>
-                <select id="add-speciality">
-                  <option value="Fullstack">Fullstack</option>
-                  <option value="Frontend">Frontend</option>
-                  <option value="Backend">Backend</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="add-role">Role</label>
-                <select id="add-role">
-                  <option value="reviewer">Reviewer</option>
-                  <option value="senior">Senior Reviewer</option>
-                  <option value="scrum_master">Scrum Master</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Add User</button>
-          </form>
-        </div>
-
-        <div class="admin-section" id="admin-delete-review">
-          <h3>Delete Review</h3>
-          <form id="delete-review-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="delete-review-select">Select Review</label>
-                <select id="delete-review-select" required></select>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-danger">Delete Review</button>
-          </form>
-        </div>
-
         <div class="admin-section" id="admin-passwords">
           <h3>Password Management</h3>
-
           <div class="table-wrapper" style="margin-bottom: 1.5rem;">
             <table id="admin-passwords-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Password</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Name</th><th>Role</th><th>Password</th><th>Discord</th><th>Actions</th></tr></thead>
               <tbody id="admin-passwords-body"></tbody>
             </table>
           </div>
-
-          <div class="form-row" style="margin-bottom: 1rem;">
+          <div class="form-row">
             <div class="form-group">
               <label for="pw-user-select">Select User</label>
               <select id="pw-user-select"></select>
             </div>
           </div>
-
-          <div class="form-row" style="align-items: end;">
+          <div class="form-row" style="margin-top: 0.5rem; align-items: end;">
             <div class="form-group">
               <label for="pw-set-input">Set Password</label>
               <input type="text" id="pw-set-input" placeholder="New password">
@@ -353,85 +221,7 @@
             <button type="button" class="btn btn-primary" onclick="adminSetPassword()">Set</button>
             <button type="button" class="btn btn-warning" onclick="adminResetPassword()">Generate New</button>
           </div>
-
           <div id="pw-result" class="success-msg" style="display: none; margin-top: 0.75rem;"></div>
-        </div>
-
-        <div class="admin-section" id="admin-emails">
-          <h3>Email Management</h3>
-          <form id="email-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="email-user-select">User</label>
-                <select id="email-user-select" required></select>
-              </div>
-              <div class="form-group">
-                <label for="email-input">Email Address</label>
-                <input type="email" id="email-input" placeholder="user@company.com">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Email</button>
-          </form>
-        </div>
-
-        <div class="admin-section" id="admin-password-status">
-          <h3>Password Status</h3>
-          <div class="table-wrapper">
-            <table id="password-status-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Password Set</th>
-                  <th>Email</th>
-                  <th>Discord</th>
-                </tr>
-              </thead>
-              <tbody id="password-status-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="admin-section" id="admin-csv-import">
-          <h3>Import CSV</h3>
-          <form id="csv-import-form">
-            <div class="form-group">
-              <label for="csv-file">Upload CSV File</label>
-              <input type="file" id="csv-file" accept=".csv">
-            </div>
-            <p class="help-text">CSV format: "DevName","CurrentLoad","Speciality"</p>
-            <button type="submit" class="btn btn-secondary">Import & Replace</button>
-          </form>
-        </div>
-
-        <div class="admin-section" id="admin-remove-user">
-          <h3>Remove User</h3>
-          <form id="remove-reviewer-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="remove-user-select">User to Remove</label>
-                <select id="remove-user-select" required></select>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-danger">Remove User</button>
-          </form>
-        </div>
-
-        <div class="admin-section" id="admin-settings">
-          <h3>Settings</h3>
-          <form id="settings-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="setting-reviewers">Reviewers per Request</label>
-                <input type="number" id="setting-reviewers" min="1" max="5" value="3">
-              </div>
-              <div class="form-group">
-                <label for="setting-max-load">Max Load per Reviewer</label>
-                <input type="number" id="setting-max-load" min="1" max="10" value="3">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Settings</button>
-          </form>
         </div>
       </div>
     </section>
@@ -473,25 +263,8 @@
           <input type="text" id="reviewer-edit-name" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
         </div>
         <div class="form-row" style="margin-top:0.75rem;">
-          <div class="form-group">
-            <label>Role</label>
-            <select id="reviewer-edit-role" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
-              <option value="reviewer">Reviewer</option>
-              <option value="senior">Senior</option>
-              <option value="scrum_master">Scrum Master</option>
-              <option value="manager">Manager</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Speciality</label>
-            <select id="reviewer-edit-speciality" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
-              <option value="frontend">Frontend</option>
-              <option value="backend">Backend</option>
-              <option value="fullstack">Fullstack</option>
-              <option value="None">None</option>
-            </select>
-          </div>
+          <div class="form-group"><label>Role</label><select id="reviewer-edit-role" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"><option value="reviewer">Reviewer</option><option value="senior">Senior</option><option value="scrum_master">Scrum Master</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+          <div class="form-group"><label>Speciality</label><select id="reviewer-edit-speciality" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"><option value="frontend">Frontend</option><option value="backend">Backend</option><option value="fullstack">Fullstack</option><option value="None">None</option></select></div>
         </div>
         <div class="form-row" style="margin-top:0.75rem;">
           <div class="form-group"><label>Current Load</label><input type="number" id="reviewer-edit-load" min="0" max="999" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
