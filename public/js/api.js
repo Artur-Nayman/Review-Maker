@@ -149,6 +149,10 @@ const API = {
     return this.post(`/api/reviewers/${name}/unlink`, { userRole: currentUser?.role || 'admin' });
   },
 
+  async linkDiscord(name, discordId) {
+    return this.post(`/api/reviewers/${name}/link-discord`, { userRole: currentUser?.role || 'admin', discordId });
+  },
+
   async updateReviewStatus(id, status) {
     return this.patch(`/api/reviews/${id}/status`, { status });
   },
