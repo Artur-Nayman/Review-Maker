@@ -1,5 +1,6 @@
 # Review Maker
 
+
 Review assignment system with load balancing, role-based access, Discord bot integration, and Google Sheets sync.
 
 ## Features
@@ -7,6 +8,7 @@ Review assignment system with load balancing, role-based access, Discord bot int
 - **Web Dashboard** — Create reviews, manage reviewers, track approvals
 - **Discord Bot** — Full review management via slash commands
 - **Git-synced Data** — `data.json` is tracked in Git, auto-commits on every change
+
 - **Google Sheets Sync** — Review queue automatically synced to Google Sheets
 - **Reviewer Capacity Control** — Simultaneous load limit + weekly cap + large review limit
 - **Commit-Based Reviews** — Support for branch reviews and 1–3 commit hash reviews
@@ -16,6 +18,7 @@ Review assignment system with load balancing, role-based access, Discord bot int
 - **Password Management** — Pre-generated passwords, admin-only visibility
 
 ## Quick Start (Local PC / Server)
+
 
 ### Prerequisites
 - Node.js v18+
