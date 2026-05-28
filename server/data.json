@@ -13,7 +13,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer01",
@@ -28,7 +29,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer02",
@@ -43,7 +45,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer03",
@@ -58,7 +61,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer04",
@@ -73,7 +77,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer05",
@@ -88,7 +93,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer06",
@@ -103,7 +109,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer07",
@@ -118,7 +125,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer08",
@@ -133,7 +141,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer09",
@@ -148,7 +157,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer10",
@@ -163,7 +173,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer11",
@@ -178,7 +189,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer12",
@@ -193,7 +205,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer13",
@@ -208,7 +221,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer14",
@@ -223,7 +237,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer15",
@@ -238,7 +253,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer16",
@@ -253,7 +269,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Minna",
@@ -268,7 +285,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     },
     {
       "name": "Reviewer17",
@@ -283,7 +301,8 @@
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
-      "maxLargeSimultaneous": 1
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3
     }
   ],
   "reviews": [
