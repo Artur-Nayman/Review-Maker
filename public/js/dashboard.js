@@ -46,8 +46,10 @@ function setupTabs() {
 
       if (btn.dataset.tab === 'active-reviews') loadReviews();
       if (btn.dataset.tab === 'my-reviews') loadMyReviews();
+      if (btn.dataset.tab === 'all-reviews') loadAllReviews();
       if (btn.dataset.tab === 'reviewers') loadReviewers();
       if (btn.dataset.tab === 'history') loadReviews();
+      if (btn.dataset.tab === 'data') loadRawData();
       if (btn.dataset.tab === 'admin') loadAdminData();
     });
   });
@@ -151,6 +153,7 @@ async function loadReviewers() {
           </div>
         </td>
         <td>${!isReviewable ? '<span style="color: var(--text-muted); font-size: 0.75rem;">Non-reviewer</span>' : (r.load >= maxLoad ? '<span class="status-badge pending">Full</span>' : '<span class="status-badge approved">Available</span>')}</td>
+        <td><button class="btn btn-sm btn-primary" onclick="openReviewerEdit('${r.name}')">Edit</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -264,6 +267,7 @@ function renderHistory(reviews) {
       <td><span class="status-badge ${r.status}">${formatStatus(r.status)}</span></td>
       <td><span class="priority-badge ${r.priority}">${r.priority}</span></td>
       <td>${new Date(r.createdAt).toLocaleDateString()}</td>
+      <td><button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">View</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -899,4 +903,129 @@ function formatStatus(status) {
     pending: 'Pending'
   };
   return map[status] || status;
+}
+
+async function loadAllReviews() {
+  try {
+    const { active, history } = await API.getReviews();
+    const all = [...active, ...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const tbody = document.getElementById('all-reviews-body');
+    const empty = document.getElementById('no-all-reviews');
+    const countEl = document.getElementById('all-reviews-count');
+    tbody.innerHTML = '';
+    if (all.length === 0) { empty.style.display = 'block'; countEl.textContent = ''; return; }
+    empty.style.display = 'none';
+    countEl.textContent = `(${all.length} total)`;
+    all.forEach(r => {
+      const tr = document.createElement('tr');
+      const canEdit = currentUser.role === 'admin' || currentUser.role === 'manager';
+      tr.innerHTML = `
+        <td><code>${r.id}</code></td>
+        <td><code>${r.branch}</code></td>
+        <td>${r.merger}</td>
+        <td>${r.reviewers.map(rv => rv.name).join(', ')}</td>
+        <td>${r.approvalCount}/${r.reviewers.length}</td>
+        <td><span class="priority-badge ${r.priority}">${r.priority}</span></td>
+        <td style="font-size:0.75rem;color:var(--text-muted)">${r.size || '—'}</td>
+        <td>${canEdit ? `
+          <select onchange="updateReviewStatus('${r.id}', this.value)" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:0.25rem;font-size:0.75rem;">
+            ${['pending','in_review','fix_needed','fix_made','escalated','approved','rejected','deleted'].map(s =>
+              `<option value="${s}" ${r.status === s ? 'selected' : ''}>${formatStatus(s)}</option>`
+            ).join('')}
+          </select>` : `<span class="status-badge ${r.status}">${formatStatus(r.status)}</span>`}
+        </td>
+        <td style="font-size:0.75rem;color:var(--text-muted)">${new Date(r.createdAt).toLocaleDateString()}</td>
+        <td>
+          <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">Details</button>
+          ${canEdit ? `<button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Failed to load all reviews:', err);
+  }
+}
+
+async function updateReviewStatus(id, newStatus) {
+  try {
+    await API.updateReviewStatus(id, newStatus);
+    loadAllReviews();
+    loadReviews();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function loadRawData() {
+  try {
+    const [reviewsRes, reviewers, settings] = await Promise.all([API.getReviews(), API.getReviewers(), API.getSettings()]);
+    const data = {
+      reviews: [...reviewsRes.active, ...reviewsRes.history],
+      reviewers,
+      settings
+    };
+    document.getElementById('raw-data-view').textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    document.getElementById('raw-data-view').textContent = 'Error loading data: ' + err.message;
+  }
+}
+
+function copyRawData() {
+  const text = document.getElementById('raw-data-view').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Raw data copied to clipboard');
+  }).catch(() => {
+    alert('Failed to copy — select and copy manually');
+  });
+}
+
+let editingReviewerName = null;
+
+async function openReviewerEdit(name) {
+  const reviewers = await API.getReviewers();
+  const reviewer = reviewers.find(r => r.name === name);
+  if (!reviewer) return;
+  editingReviewerName = name;
+  document.getElementById('reviewer-modal-title').textContent = `Edit: ${name}`;
+  document.getElementById('reviewer-edit-name').value = reviewer.name;
+  document.getElementById('reviewer-edit-role').value = reviewer.role;
+  document.getElementById('reviewer-edit-speciality').value = reviewer.speciality || 'None';
+  document.getElementById('reviewer-edit-load').value = reviewer.load || 0;
+  document.getElementById('reviewer-edit-maxload').value = reviewer.maxLoad || 3;
+  document.getElementById('reviewer-edit-weekly').value = reviewer.weeklyCount || 0;
+  document.getElementById('reviewer-edit-maxweekly').value = reviewer.maxActiveReviews || 5;
+  document.getElementById('reviewer-modal-result').style.display = 'none';
+  document.getElementById('reviewer-modal').style.display = 'flex';
+}
+
+function closeReviewerModal() {
+  document.getElementById('reviewer-modal').style.display = 'none';
+  editingReviewerName = null;
+}
+
+async function saveReviewerEdit() {
+  const resultEl = document.getElementById('reviewer-modal-result');
+  const name = document.getElementById('reviewer-edit-name').value.trim();
+  if (!name) { resultEl.textContent = 'Name is required'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
+  try {
+    await API.updateReviewer(editingReviewerName, {
+      name,
+      role: document.getElementById('reviewer-edit-role').value,
+      speciality: document.getElementById('reviewer-edit-speciality').value,
+      load: parseInt(document.getElementById('reviewer-edit-load').value) || 0,
+      maxLoad: parseInt(document.getElementById('reviewer-edit-maxload').value) || 3,
+      weeklyCount: parseInt(document.getElementById('reviewer-edit-weekly').value) || 0,
+      maxActiveReviews: parseInt(document.getElementById('reviewer-edit-maxweekly').value) || 5
+    });
+    resultEl.textContent = `Saved changes to ${editingReviewerName}`;
+    resultEl.className = 'success-msg';
+    resultEl.style.display = 'block';
+    loadReviewers();
+    loadAdminData();
+    setTimeout(closeReviewerModal, 1500);
+  } catch (err) {
+    resultEl.textContent = err.message;
+    resultEl.className = 'error-msg';
+    resultEl.style.display = 'block';
+  }
 }

@@ -383,14 +383,9 @@ app.get('/api/reviewers', (req, res) => {
 
 app.get('/api/reviews', (req, res) => {
   const data = loadData();
-  const now = new Date();
-  const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
 
   const active = data.reviews.filter(r => ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status));
-  const history = data.reviews.filter(r => {
-    const created = new Date(r.createdAt);
-    return ['approved', 'rejected', 'deleted'].includes(r.status) && created >= oneMonthAgo;
-  });
+  const history = data.reviews.filter(r => ['approved', 'rejected', 'deleted'].includes(r.status));
 
   res.json({ active, history });
 });
@@ -973,6 +968,35 @@ app.put('/api/settings', (req, res) => {
   const safe = { ...data.settings };
   delete safe.adminPassword;
   res.json(safe);
+});
+
+app.patch('/api/reviews/:id/status', (req, res) => {
+  const { status } = req.body;
+  if (!status || !['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated', 'approved', 'rejected', 'deleted'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  const data = loadData();
+  const review = findReviewById(data, req.params.id);
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+  review.status = status;
+  saveData(data, `Review ${review.id} status changed to ${status} via dashboard`);
+  res.json({ success: true });
+});
+
+app.patch('/api/reviewers/:name/reviewer', (req, res) => {
+  const data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+  if (!reviewer) return res.status(404).json({ error: 'Reviewer not found' });
+  const { name, role, speciality, load, maxLoad, weeklyCount, maxActiveReviews } = req.body;
+  if (name) reviewer.name = name;
+  if (role) reviewer.role = role;
+  if (speciality) reviewer.speciality = speciality;
+  if (load !== undefined) reviewer.load = load;
+  if (maxLoad !== undefined) reviewer.maxLoad = maxLoad;
+  if (weeklyCount !== undefined) reviewer.weeklyCount = weeklyCount;
+  if (maxActiveReviews !== undefined) reviewer.maxActiveReviews = maxActiveReviews;
+  saveData(data, `Reviewer ${req.params.name} updated from dashboard`);
+  res.json({ success: true });
 });
 
 function migrateUserDefaults(data, settings) {

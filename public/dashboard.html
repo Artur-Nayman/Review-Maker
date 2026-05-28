@@ -31,9 +31,11 @@
     <button class="tab-btn active" data-tab="new-review">New Review</button>
     <button class="tab-btn" data-tab="active-reviews">Active Reviews</button>
     <button class="tab-btn" data-tab="my-reviews">My Reviews</button>
+    <button class="tab-btn" data-tab="all-reviews">All Reviews</button>
     <button class="tab-btn" data-tab="reviewers">Reviewers</button>
     <button class="tab-btn" data-tab="history">History</button>
     <button class="tab-btn admin-only" data-tab="admin" style="display: none;">Admin</button>
+    <button class="tab-btn admin-only" data-tab="data" style="display: none;">Raw Data</button>
   </nav>
 
   <main class="app-main">
@@ -130,6 +132,23 @@
       </div>
     </section>
 
+    <section id="tab-all-reviews" class="tab-content">
+      <div class="card full-width">
+        <h2>All Reviews <span id="all-reviews-count" style="font-size:0.875rem;color:var(--text-muted);font-weight:normal;"></span></h2>
+        <div class="table-wrapper">
+          <table id="all-reviews-table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Priority</th><th>Size</th><th>Status</th><th>Created</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="all-reviews-body"></tbody>
+          </table>
+        </div>
+        <div id="no-all-reviews" class="empty-state" style="display:none;"><p>No reviews found</p></div>
+      </div>
+    </section>
+
     <section id="tab-reviewers" class="tab-content">
       <div class="card full-width">
         <h2>Reviewer Loads</h2>
@@ -152,7 +171,7 @@
 
     <section id="tab-history" class="tab-content">
       <div class="card full-width">
-        <h2>Review History (Last 30 Days)</h2>
+        <h2>Review History</h2>
         <div class="table-wrapper">
           <table id="history-table">
             <thead>
@@ -163,6 +182,7 @@
                 <th>Result</th>
                 <th>Priority</th>
                 <th>Created</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="history-body"></tbody>
@@ -415,6 +435,18 @@
         </div>
       </div>
     </section>
+
+    <section id="tab-data" class="tab-content">
+      <div class="card full-width">
+        <h2>Raw Data</h2>
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">Current server data.json — read-only. Use for debugging.</p>
+        <pre id="raw-data-view" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;font-size:0.75rem;max-height:500px;overflow:auto;white-space:pre-wrap;color:var(--text);"></pre>
+        <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+          <button class="btn btn-sm btn-primary" onclick="loadRawData()">Refresh</button>
+          <button class="btn btn-sm btn-ghost" onclick="copyRawData()">📋 Copy</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <div id="review-modal" class="modal" style="display: none;">
@@ -425,6 +457,56 @@
         <button class="modal-close" onclick="closeModal()">&times;</button>
       </div>
       <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="reviewer-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeReviewerModal()"></div>
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 id="reviewer-modal-title">Edit Reviewer</h3>
+        <button class="modal-close" onclick="closeReviewerModal()">&times;</button>
+      </div>
+      <div id="reviewer-modal-body" style="padding:1.5rem;">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="reviewer-edit-name" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group">
+            <label>Role</label>
+            <select id="reviewer-edit-role" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+              <option value="reviewer">Reviewer</option>
+              <option value="senior">Senior</option>
+              <option value="scrum_master">Scrum Master</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Speciality</label>
+            <select id="reviewer-edit-speciality" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+              <option value="frontend">Frontend</option>
+              <option value="backend">Backend</option>
+              <option value="fullstack">Fullstack</option>
+              <option value="None">None</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label>Current Load</label><input type="number" id="reviewer-edit-load" min="0" max="999" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+          <div class="form-group"><label>Max Load</label><input type="number" id="reviewer-edit-maxload" min="1" max="20" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label>Weekly Count</label><input type="number" id="reviewer-edit-weekly" min="0" max="99" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+          <div class="form-group"><label>Max Weekly</label><input type="number" id="reviewer-edit-maxweekly" min="1" max="99" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;">
+          <button class="btn btn-primary" onclick="saveReviewerEdit()">Save Changes</button>
+          <button class="btn btn-ghost" onclick="closeReviewerModal()">Cancel</button>
+        </div>
+        <div id="reviewer-modal-result" class="success-msg" style="display:none;margin-top:0.75rem;"></div>
+      </div>
     </div>
   </div>
 
