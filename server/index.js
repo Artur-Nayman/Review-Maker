@@ -949,6 +949,23 @@ app.post('/api/reviewers/:name/unlink', (req, res) => {
   res.json({ message: `Discord link removed for ${reviewer.name}` });
 });
 
+app.post('/api/reviewers/:name/link-discord', (req, res) => {
+  const { userRole, discordId } = req.body;
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can link accounts' });
+  }
+  if (!discordId || typeof discordId !== 'string' || !discordId.trim()) {
+    return res.status(400).json({ error: 'discordId is required' });
+  }
+  const data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+
+  reviewer.discordId = discordId.trim();
+  saveData(data, `Discord link set for ${req.params.name} via admin dashboard`);
+  res.json({ message: `Discord linked to ${reviewer.name}` });
+});
+
 app.get('/api/settings', (req, res) => {
   const data = loadData();
   const safe = { ...data.settings };

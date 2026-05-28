@@ -499,7 +499,9 @@ async function loadPasswords() {
     tbody.innerHTML = '';
     passwords.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
       const tr = document.createElement('tr');
-      const discordCell = r.discordId ? `<span style="color: var(--success); font-size: 0.75rem;">Linked</span> <button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Not linked</span>';
+      const discordCell = r.discordId
+        ? `<span style="color: var(--success); font-size: 0.75rem;">✅ Linked</span> <button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>`
+        : `<span style="color: var(--text-muted); font-size: 0.75rem;">Not linked</span> <button class="btn btn-sm btn-primary" onclick="promptLinkDiscord('${r.name}')">Link</button>`;
       tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><code>${r.plainPassword || 'Not set'}</code></td><td>${discordCell}</td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
       tbody.appendChild(tr);
     });
@@ -522,6 +524,16 @@ async function unlinkDiscord(name) {
   try {
     await API.unlinkDiscord(name);
     alert(`Discord link removed for ${name}`);
+    loadAdminData();
+  } catch (err) { alert(err.message); }
+}
+
+async function promptLinkDiscord(name) {
+  const discordId = prompt(`Enter Discord User ID for ${name}:\n(Right-click user in Discord → Copy ID)`, '');
+  if (!discordId) return;
+  try {
+    await API.linkDiscord(name, discordId.trim());
+    alert(`Discord linked to ${name}`);
     loadAdminData();
   } catch (err) { alert(err.message); }
 }
