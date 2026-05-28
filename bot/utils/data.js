@@ -79,6 +79,10 @@ function migrateReviewerFields(data) {
       r.maxLargeSimultaneous = data.settings.maxLargeSimultaneous || 1;
       changed = true;
     }
+    if (r.maxLoad === undefined) {
+      r.maxLoad = data.settings.maxLoad || 3;
+      changed = true;
+    }
   }
   if (changed) {
     saveData(data, 'Migrated reviewer fields');
@@ -106,11 +110,14 @@ function getReviewerCapacity(data, reviewer) {
   resetWeeklyCountsIfNeeded(data);
   const maxWeekly = reviewer.maxActiveReviews || data.settings.maxWeeklyReviews || 5;
   const maxLarge = reviewer.maxLargeSimultaneous || data.settings.maxLargeSimultaneous || 1;
+  const maxLoad = reviewer.maxLoad || data.settings.maxLoad || 3;
   return {
-    weeklyRemaining: Math.max(0, maxWeekly - reviewer.weeklyCount),
+    weeklyRemaining: Math.max(0, maxWeekly - (reviewer.weeklyCount || 0)),
     canTakeLarge: !reviewer.currentLargeReview,
+    atCapacity: (reviewer.load || 0) >= maxLoad,
     maxWeekly,
-    maxLarge
+    maxLarge,
+    maxLoad
   };
 }
 

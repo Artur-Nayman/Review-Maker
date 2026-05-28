@@ -124,11 +124,14 @@ function getReviewerCapacity(data, reviewer) {
   resetWeeklyCountsIfNeeded(data);
   const maxWeekly = reviewer.maxActiveReviews || data.settings.maxWeeklyReviews || 5;
   const maxLarge = reviewer.maxLargeSimultaneous || data.settings.maxLargeSimultaneous || 1;
+  const maxLoad = reviewer.maxLoad || data.settings.maxLoad || 3;
   return {
     weeklyRemaining: Math.max(0, maxWeekly - (reviewer.weeklyCount || 0)),
     canTakeLarge: !reviewer.currentLargeReview,
+    atCapacity: (reviewer.load || 0) >= maxLoad,
     maxWeekly,
-    maxLarge
+    maxLarge,
+    maxLoad
   };
 }
 
@@ -168,6 +171,10 @@ function migrateReviewerFields(data) {
     }
     if (r.maxLargeSimultaneous === undefined) {
       r.maxLargeSimultaneous = data.settings.maxLargeSimultaneous || 1;
+      changed = true;
+    }
+    if (r.maxLoad === undefined) {
+      r.maxLoad = data.settings.maxLoad || 3;
       changed = true;
     }
   }
@@ -215,6 +222,7 @@ function selectReviewers(data, reviewType, count, excludeName, size) {
     if (r.name.toLowerCase() === excludeName?.toLowerCase()) return false;
     const cap = getReviewerCapacity(data, r);
     if (cap.weeklyRemaining <= 0) return false;
+    if (cap.atCapacity) return false;
     if (sizeToUse === 'large' && !cap.canTakeLarge) return false;
     return true;
   });

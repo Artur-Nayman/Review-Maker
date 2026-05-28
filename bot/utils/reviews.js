@@ -8,6 +8,7 @@ function selectReviewers(data, reviewType, count, excludeName, size) {
     if (r.name.toLowerCase() === excludeName?.toLowerCase()) return false;
     const cap = getReviewerCapacity(data, r);
     if (cap.weeklyRemaining <= 0) return false;
+    if (cap.atCapacity) return false;
     if (sizeToUse === 'large' && !cap.canTakeLarge) return false;
     return true;
   });

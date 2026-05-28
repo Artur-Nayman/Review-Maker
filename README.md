@@ -1,17 +1,21 @@
 # Review Maker
 
-Review assignment system with load balancing, role-based access, and Discord bot integration.
+Review assignment system with load balancing, role-based access, Discord bot integration, and Google Sheets sync.
 
 ## Features
 
 - **Web Dashboard** — Create reviews, manage reviewers, track approvals
 - **Discord Bot** — Full review management via slash commands
 - **Git-synced Data** — `data.json` is tracked in Git, auto-commits on every change
+- **Google Sheets Sync** — Review queue automatically synced to Google Sheets
+- **Reviewer Capacity Control** — Simultaneous load limit + weekly cap + large review limit
+- **Commit-Based Reviews** — Support for branch reviews and 1–3 commit hash reviews
+- **Auto-Sizing** — Reviews auto-sized (small / medium / large) based on type and commits
+- **Load Balancing** — Automatic reviewer assignment with specialty matching
 - **Standalone Remote Dashboard** — Browser-only dashboard that talks directly to GitHub
 - **Password Management** — Pre-generated passwords, admin-only visibility
-- **Load Balancing** — Automatic reviewer assignment with specialty matching
 
-## Quick Start (Local PC)
+## Quick Start (Local PC / Server)
 
 ### Prerequisites
 - Node.js v18+
@@ -26,9 +30,18 @@ npm install
 ### 2. Configure Environment
 Copy `.env.example` to `.env` and fill in:
 ```env
+# Required
 DISCORD_BOT_TOKEN=your_bot_token_here
 DISCORD_CLIENT_ID=your_client_id_here
 DISCORD_GUILD_ID=your_server_id_here
+
+# Google Sheets sync (optional)
+GOOGLE_SHEET_ID=your_sheet_id
+GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+GOOGLE_SERVICE_ACCOUNT_PATH=/path/to/credentials.json
+
+# Server
+PORT=3000
 ```
 
 **Getting Discord credentials:**
@@ -69,104 +82,50 @@ Default admin: `Admin` / `root`
 
 ---
 
-## Installation on Termux (Android)
+## Setup Guide
 
-### 1. Install Termux
-Install from [F-Droid](https://f-droid.org/packages/com.termux/) (recommended) or GitHub releases. Do NOT use the Play Store version (outdated).
+### Creating a Google Service Account (for Sheets Sync)
 
-### 2. Update Packages
-```bash
-pkg update && pkg upgrade
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select existing)
+3. Enable **Google Sheets API**
+4. Go to **IAM & Admin** → **Service Accounts** → **Create Service Account**
+5. Create a key → **JSON** → download
+6. Share your Google Sheet with the service account email (viewer/edit)
+7. Set `GOOGLE_SERVICE_ACCOUNT_PATH` in `.env` to the JSON file path, or paste the full JSON into `GOOGLE_SERVICE_ACCOUNT_JSON`
+
+### Finding Your Google Sheet ID
+
+The Sheet ID is the long string in the URL:
 ```
-
-### 3. Install Node.js and Git
-```bash
-pkg install nodejs git
+https://docs.google.com/spreadsheets/d/THIS_IS_THE_SHEET_ID/edit
 ```
-
-### 4. Clone Repository
-```bash
-git clone https://github.com/YOUR_USERNAME/Review-Maker.git
-cd Review-Maker
-```
-
-### 5. Install Dependencies
-```bash
-npm install
-```
-
-### 6. Configure Environment
-```bash
-cp .env.example .env
-nano .env
-```
-Fill in your Discord credentials (see step 2 above for how to get them).
-
-### 7. Deploy Commands (first time only)
-```bash
-npm run bot:deploy
-```
-
-### 8. Run
-```bash
-# Both server and bot
-npm run all
-
-# Or run separately
-npm start    # web dashboard
-npm run bot  # discord bot
-```
-
-Access the web dashboard at `http://localhost:3000` in your phone's browser.
-
-### Termux Tips
-- Keep Termux running in the background for the bot to stay online
-- Use `termux-wake-lock` to prevent Android from killing the process
-- To run in background: `npm run all &` (then close Termux — but note Android may still kill it)
-- For persistent background running, consider using `tmux` or `screen`:
-  ```bash
-  pkg install tmux
-  tmux new -s review-maker
-  npm run all
-  # Press Ctrl+B, then D to detach
-  ```
 
 ---
 
-## Standalone Remote Dashboard
+## Google Sheets Sync
 
-For accessing the dashboard from anywhere without running a server:
+When configured, every review state change is automatically synced to the **Review Queue** tab:
+- New review → row added
+- Approval count updated → approvals column updated
+- Status change → status updated
+- Startup → full bulk sync
 
-1. Open `dashboard-remote.html` in any browser
-2. Enter your:
-   - **GitHub Personal Access Token** (needs `repo` scope)
-   - **Repository** (format: `owner/repo`)
-   - **Branch** (e.g., `discord-bot`)
-3. Click **Connect**
-
-The dashboard reads/writes `data.json` directly via the GitHub API. Changes are auto-committed and synced with the server/bot.
-
-**Creating a GitHub PAT:**
-1. Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic)
-2. Generate new token (classic)
-3. Select `repo` scope
-4. Copy the token — you won't see it again
+Branch names are scanned for MR IIDs (`!123` pattern) and auto-filled in the Linked MR IID column.
 
 ---
 
-## Architecture
+## Reviewer Capacity
 
-```
-[GitHub Repo] ← single source of truth (server/data.json)
-      ↑↓ git CLI              ↑↓ GitHub API
-[Server PC]              [Remote Dashboard]
-  server/index.js          dashboard-remote.html
-  bot/index.js             (browser only, no server)
-```
+Two limits per reviewer, both enforced:
 
-- **Server + Bot** use `simple-git` to pull on startup, commit + push on every change
-- **Remote Dashboard** uses GitHub API to read/write `data.json`
-- **Conflict handling**: auto-rebase on server, auto-retry on dashboard
+| Check | What It Blocks | Default |
+|-------|---------------|---------|
+| **Simultaneous load** (`maxLoad`) | Max concurrent active reviews | 3 |
+| **Weekly cap** (`maxWeeklyReviews`) | Max total reviews per week | 5 |
+| **Large limit** (`maxLargeSimultaneous`) | How many large reviews at once | 1 |
+
+Weekly counts auto-reset on Monday 00:00.
 
 ---
 
@@ -177,6 +136,7 @@ The dashboard reads/writes `data.json` directly via the GitHub API. Changes are 
 | `/link` | Link Discord account to reviewer | Everyone |
 | `/review create` | Create review (auto-assign) | Linked users |
 | `/review create-manual` | Create review with specific reviewers | Admin only |
+| `/review create-commit` | Create review from 1-3 commit hashes | Linked users |
 | `/review approve` | Approve a review | Assigned reviewers |
 | `/review reject` | Reject with comment | Assigned reviewers |
 | `/review fix-done` | Mark fixes done, select who re-reviews | Merger |
@@ -185,6 +145,10 @@ The dashboard reads/writes `data.json` directly via the GitHub API. Changes are 
 | `/review status` | Show active reviews | Everyone |
 | `/review details` | Show review details | Linked users |
 | `/my-reviews` | Show your assigned reviews | Linked users |
+| `/admin workload` | Show reviewer load, weekly count, capacity | Admin only |
+| `/admin dashboard` | Full system status summary | Admin only |
+| `/admin settings` | View/edit system settings | Admin only |
+| `/admin set-weekly` | Reset a reviewer's weekly count | Admin only |
 | `/admin passwords` | View all passwords | Admin only |
 | `/admin reset-password` | Reset user password | Admin only |
 | `/admin set-password` | Set user password | Admin only |
@@ -197,6 +161,26 @@ The dashboard reads/writes `data.json` directly via the GitHub API. Changes are 
 
 ---
 
+## Architecture
+
+```
+                    [GitHub Repo] ← single source of truth (server/data.json)
+                          ↑↓ git CLI              ↑↓ GitHub API
+                    [Server PC]              [Remote Dashboard]
+[Google Sheets] ←── server/index.js          dashboard-remote.html
+                    bot/index.js             (browser only, no server)
+                        |
+[sheets-sync.js] ───────┘
+  (fires on every saveData call)
+```
+
+- **Server + Bot** use `simple-git` to pull on startup, commit + push on every change
+- **Remote Dashboard** uses GitHub API to read/write `data.json`
+- **Google Sheets Sync** fires on every `saveData` call — pushes all active reviews to the Review Queue tab
+- **Conflict handling**: auto-rebase on server, auto-retry on dashboard
+
+---
+
 ## Data Structure
 
 `server/data.json`:
@@ -206,6 +190,12 @@ The dashboard reads/writes `data.json` directly via the GitHub API. Changes are 
     {
       "name": "John Doe",
       "load": 0,
+      "weeklyCount": 0,
+      "weeklyResetAt": "2026-05-28T00:00:00.000Z",
+      "currentLargeReview": false,
+      "maxActiveReviews": 5,
+      "maxLargeSimultaneous": 1,
+      "maxLoad": 3,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
@@ -214,14 +204,43 @@ The dashboard reads/writes `data.json` directly via the GitHub API. Changes are 
       "discordId": ""
     }
   ],
-  "reviews": [...],
+  "reviews": [
+    {
+      "id": "REV-123",
+      "reviewType": "branch",
+      "branch": "feature/new-feature",
+      "commits": [],
+      "merger": "Developer Name",
+      "reviewers": [
+        { "name": "Reviewer A", "status": "pending", "notified": false }
+      ],
+      "approvalCount": 0,
+      "reviewersPerRequest": 3,
+      "status": "open",
+      "type": "feature",
+      "priority": "medium",
+      "size": "medium",
+      "createdAt": "2026-05-28T10:00:00.000Z"
+    }
+  ],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
+    "maxWeeklyReviews": 5,
+    "maxLargeSimultaneous": 1,
     "nextReviewNumber": 1
   }
 }
 ```
+
+### Review Types
+- **branch** (default) — review a feature branch
+- **commit** — review 1-3 specific commit hashes (no branch merge)
+
+### Sizes
+- **small** — bugfix, chore, test, revert
+- **medium** — feature, refactor, perf
+- **large** — epic, draft (locks reviewer's large slot)
 
 ---
 
