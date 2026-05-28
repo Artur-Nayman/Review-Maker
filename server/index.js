@@ -918,6 +918,7 @@ app.get('/api/admin/passwords', (req, res) => {
   res.json(data.reviewers.map(r => ({
     name: r.name,
     role: r.role,
+    discordId: r.discordId || '',
     plainPassword: r.plainPassword || ''
   })));
 });
