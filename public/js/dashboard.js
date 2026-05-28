@@ -58,7 +58,6 @@ function setupTabs() {
 function loadMergerOptions() {
   const select = document.getElementById('merger-select');
   select.innerHTML = '';
-
   API.getReviewers().then(reviewers => {
     reviewers.sort((a, b) => a.name.localeCompare(b.name));
     reviewers.forEach(r => {
@@ -93,22 +92,11 @@ function setupNewReviewForm() {
         : '';
       document.getElementById('created-review-details').innerHTML = `
         ${mergerRow}
-        <div class="review-detail-row">
-          <span class="review-detail-label">Branch</span>
-          <span class="review-detail-value">${review.branch}</span>
-        </div>
-        <div class="review-detail-row">
-          <span class="review-detail-label">Reviewers</span>
-          <span class="review-detail-value">${review.reviewers.map(r => r.name).join(', ')}</span>
-        </div>
-        <div class="review-detail-row">
-          <span class="review-detail-label">Type</span>
-          <span class="review-detail-value">${review.reviewType}</span>
-        </div>
-        <div class="review-detail-row">
-          <span class="review-detail-label">Priority</span>
-          <span class="review-detail-value"><span class="priority-badge ${review.priority}">${review.priority}</span></span>
-        </div>
+        <div class="review-detail-row"><span class="review-detail-label">ID</span><span class="review-detail-value"><code>${review.id}</code></span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Branch</span><span class="review-detail-value">${review.branch}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Reviewers</span><span class="review-detail-value">${review.reviewers.map(r => r.name).join(', ')}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Type</span><span class="review-detail-value">${review.reviewType}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Priority</span><span class="review-detail-value"><span class="priority-badge ${review.priority}">${review.priority}</span></span></div>
       `;
 
       document.getElementById('new-review-form').reset();
@@ -133,11 +121,7 @@ async function loadReviewers() {
       const isReviewable = r.role === 'reviewer' || r.role === 'senior';
       const dots = isReviewable ? Array.from({ length: maxLoad }, (_, i) => {
         let cls = 'load-dot';
-        if (i < r.load) {
-          cls += ' filled';
-          if (r.load >= maxLoad) cls += ' full';
-          else if (r.load >= maxLoad - 1) cls += ' warn';
-        }
+        if (i < r.load) { cls += ' filled'; if (r.load >= maxLoad) cls += ' full'; else if (r.load >= maxLoad - 1) cls += ' warn'; }
         return `<div class="${cls}"></div>`;
       }).join('') : '<span style="color: var(--text-muted); font-size: 0.75rem;">N/A</span>';
 
@@ -146,15 +130,9 @@ async function loadReviewers() {
         <td><strong>${r.name}</strong></td>
         <td>${r.speciality}</td>
         <td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td>
-        <td>
-          <div class="load-bar">
-            ${dots}
-            ${isReviewable ? `<span class="load-text">${r.load}/${maxLoad}</span>` : ''}
-          </div>
-        </td>
+        <td><div class="load-bar">${dots}${isReviewable ? `<span class="load-text">${r.load}/${maxLoad}</span>` : ''}</div></td>
         <td>${!isReviewable ? '<span style="color: var(--text-muted); font-size: 0.75rem;">Non-reviewer</span>' : (r.load >= maxLoad ? '<span class="status-badge pending">Full</span>' : '<span class="status-badge approved">Available</span>')}</td>
-        <td><button class="btn btn-sm btn-primary" onclick="openReviewerEdit('${r.name}')">Edit</button></td>
-      `;
+        <td><button class="btn btn-sm btn-primary" onclick="openReviewerEdit('${r.name}')">Edit</button></td>`;
       tbody.appendChild(tr);
     });
   } catch (err) {
@@ -177,17 +155,14 @@ function renderActiveReviews(reviews) {
   const emptyState = document.getElementById('no-active-reviews');
   tbody.innerHTML = '';
 
-  if (reviews.length === 0) {
-    emptyState.style.display = 'block';
-    return;
-  }
-
+  if (reviews.length === 0) { emptyState.style.display = 'block'; return; }
   emptyState.style.display = 'none';
 
+  const canDelete = currentUser.role === 'admin' || currentUser.role === 'manager';
   reviews.forEach(r => {
-    const canDelete = currentUser.role === 'admin' || currentUser.role === 'manager';
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td><code>${r.id}</code></td>
       <td><code>${r.branch}</code></td>
       <td>${r.merger}</td>
       <td>${r.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name} (${rv.status})</span>`).join(' ')}</td>
@@ -197,8 +172,7 @@ function renderActiveReviews(reviews) {
       <td>
         <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">Details</button>
         ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
-      </td>
-    `;
+      </td>`;
     tbody.appendChild(tr);
   });
 }
@@ -215,11 +189,7 @@ async function loadMyReviews() {
     const emptyState = document.getElementById('no-my-reviews');
     tbody.innerHTML = '';
 
-    if (myReviews.length === 0) {
-      emptyState.style.display = 'block';
-      return;
-    }
-
+    if (myReviews.length === 0) { emptyState.style.display = 'block'; return; }
     emptyState.style.display = 'none';
 
     myReviews.forEach(r => {
@@ -229,16 +199,14 @@ async function loadMyReviews() {
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td><code>${r.id}</code></td>
         <td><code>${r.branch}</code></td>
         <td>${myRole}</td>
         <td>${r.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name}</span>`).join(' ')}</td>
         <td>${r.approvalCount}/${r.reviewers.length}</td>
         <td><span class="status-badge ${r.status}">${formatStatus(r.status)}</span></td>
         <td><span class="priority-badge ${r.priority}">${r.priority}</span></td>
-        <td>
-          <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">Details</button>
-        </td>
-      `;
+        <td><button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">Details</button></td>`;
       tbody.appendChild(tr);
     });
   } catch (err) {
@@ -251,24 +219,24 @@ function renderHistory(reviews) {
   const emptyState = document.getElementById('no-history');
   tbody.innerHTML = '';
 
-  if (reviews.length === 0) {
-    emptyState.style.display = 'block';
-    return;
-  }
-
+  if (reviews.length === 0) { emptyState.style.display = 'block'; return; }
   emptyState.style.display = 'none';
 
+  const canDelete = currentUser.role === 'admin' || currentUser.role === 'manager';
   reviews.forEach(r => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td><code>${r.id}</code></td>
       <td><code>${r.branch}</code></td>
       <td>${r.merger}</td>
       <td>${r.reviewers.map(rv => rv.name).join(', ')}</td>
       <td><span class="status-badge ${r.status}">${formatStatus(r.status)}</span></td>
       <td><span class="priority-badge ${r.priority}">${r.priority}</span></td>
       <td>${new Date(r.createdAt).toLocaleDateString()}</td>
-      <td><button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">View</button></td>
-    `;
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">View</button>
+        ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
+      </td>`;
     tbody.appendChild(tr);
   });
 }
@@ -282,7 +250,7 @@ async function openReviewModal(id) {
 
     title.textContent = review.branch;
 
-    let actionsHTML = '';
+    const isActive = ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(review.status);
     const isMerger = review.merger.toLowerCase() === currentUser.name.toLowerCase();
     const myReviewer = review.reviewers.find(rv => rv.name.toLowerCase() === currentUser.name.toLowerCase());
     const isSenior = currentUser.role === 'senior';
@@ -290,112 +258,51 @@ async function openReviewModal(id) {
     const isEscalated = review.status === 'escalated';
     const canDelete = currentUser.role === 'admin' || currentUser.role === 'manager';
 
+    let actionsHTML = '';
     if (myReviewer && myReviewer.status === 'pending' && (review.status === 'in_review' || review.status === 'fix_made')) {
-      actionsHTML += `
-        <button class="btn btn-sm btn-success" onclick="approveReview('${id}')">Approve</button>
-        <button class="btn btn-sm btn-warning" onclick="promptDisapprove('${id}')">Disapprove</button>
-      `;
+      actionsHTML += `<button class="btn btn-sm btn-success" onclick="approveReview('${id}')">Approve</button><button class="btn btn-sm btn-warning" onclick="promptDisapprove('${id}')">Disapprove</button>`;
     }
-
     if (isMerger && review.status === 'fix_needed') {
-      actionsHTML += `
-        <button class="btn btn-sm btn-primary" onclick="markFixDone('${id}')">Fixes Done</button>
-        <button class="btn btn-sm btn-danger" onclick="promptEscalate('${id}')">Disagree & Escalate</button>
-      `;
+      actionsHTML += `<button class="btn btn-sm btn-primary" onclick="markFixDone('${id}')">Fixes Done</button><button class="btn btn-sm btn-danger" onclick="promptEscalate('${id}')">Disagree & Escalate</button>`;
     }
-
     if (isScrumMaster && review.status === 'fix_needed') {
-      actionsHTML += `
-        <button class="btn btn-sm btn-danger" onclick="promptEscalate('${id}')">Escalate</button>
-      `;
+      actionsHTML += `<button class="btn btn-sm btn-danger" onclick="promptEscalate('${id}')">Escalate</button>`;
     }
-
     if (isEscalated && isSenior && review.escalation?.assignedTo?.toLowerCase() === currentUser.name.toLowerCase()) {
-      actionsHTML += `
-        <button class="btn btn-sm btn-success" onclick="escalationDecide('${id}', 'approve')">Approve</button>
-        <button class="btn btn-sm btn-danger" onclick="escalationDecide('${id}', 'reject')">Reject</button>
-      `;
+      actionsHTML += `<button class="btn btn-sm btn-success" onclick="escalationDecide('${id}', 'approve')">Approve</button><button class="btn btn-sm btn-danger" onclick="escalationDecide('${id}', 'reject')">Reject</button>`;
     }
-
-    if (canDelete && review.status !== 'deleted') {
-      actionsHTML += `
-        <button class="btn btn-sm btn-danger" onclick="deleteReview('${id}'); closeModal();">Delete Review</button>
-      `;
+    if (canDelete && isActive) {
+      actionsHTML += `<button class="btn btn-sm btn-danger" onclick="deleteReview('${id}'); closeModal();">Delete Review</button>`;
     }
 
     let commentsHTML = '';
     if (review.comments && review.comments.length > 0) {
-      commentsHTML = `
-        <h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Comments</h4>
-        ${review.comments.map(c => `
-          <div class="comment-item">
-            <div class="comment-author">${c.author}</div>
-            <div class="comment-text">${c.text}</div>
-            <div class="comment-time">${new Date(c.createdAt).toLocaleString()}</div>
-          </div>
-        `).join('')}
-      `;
+      commentsHTML = `<h4 style="margin-top: 1rem; margin-bottom: 0.5rem;">Comments</h4>${review.comments.map(c => `<div class="comment-item"><div class="comment-author">${c.author}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.createdAt).toLocaleString()}</div></div>`).join('')}`;
     }
 
     let escalationHTML = '';
     if (review.escalation) {
-      escalationHTML = `
-        <div class="card" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); margin-top: 1rem;">
-          <h4 style="color: var(--danger);">Escalation</h4>
-          <div class="review-detail-row">
-            <span class="review-detail-label">Requested by</span>
-            <span class="review-detail-value">${review.escalation.requestedBy}</span>
-          </div>
-          <div class="review-detail-row">
-            <span class="review-detail-label">Assigned to</span>
-            <span class="review-detail-value">${review.escalation.assignedTo}</span>
-          </div>
-          <div class="review-detail-row">
-            <span class="review-detail-label">Reason</span>
-            <span class="review-detail-value">${review.escalation.reason || 'N/A'}</span>
-          </div>
-          ${review.escalation.decision ? `
-            <div class="review-detail-row">
-              <span class="review-detail-label">Decision</span>
-              <span class="review-detail-value"><span class="status-badge ${review.escalation.decision === 'approve' ? 'approved' : 'rejected'}">${review.escalation.decision}</span></span>
-            </div>
-          ` : ''}
-        </div>
-      `;
+      escalationHTML = `<div class="card" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); margin-top: 1rem;">
+        <h4 style="color: var(--danger);">Escalation</h4>
+        <div class="review-detail-row"><span class="review-detail-label">Requested by</span><span class="review-detail-value">${review.escalation.requestedBy}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Assigned to</span><span class="review-detail-value">${review.escalation.assignedTo}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Reason</span><span class="review-detail-value">${review.escalation.reason || 'N/A'}</span></div>
+        ${review.escalation.decision ? `<div class="review-detail-row"><span class="review-detail-label">Decision</span><span class="review-detail-value"><span class="status-badge ${review.escalation.decision === 'approve' ? 'approved' : 'rejected'}">${review.escalation.decision}</span></span></div>` : ''}
+      </div>`;
     }
 
     body.innerHTML = `
-      <div class="review-detail-row">
-        <span class="review-detail-label">Merger</span>
-        <span class="review-detail-value">${review.merger}</span>
-      </div>
-      <div class="review-detail-row">
-        <span class="review-detail-label">Review Type</span>
-        <span class="review-detail-value">${review.reviewType}</span>
-      </div>
-      <div class="review-detail-row">
-        <span class="review-detail-label">Priority</span>
-        <span class="review-detail-value"><span class="priority-badge ${review.priority}">${review.priority}</span></span>
-      </div>
-      <div class="review-detail-row">
-        <span class="review-detail-label">Status</span>
-        <span class="review-detail-value"><span class="status-badge ${review.status}">${formatStatus(review.status)}</span></span>
-      </div>
-      <div class="review-detail-row">
-        <span class="review-detail-label">Approvals</span>
-        <span class="review-detail-value">${review.approvalCount}/${review.reviewers.length}</span>
-      </div>
-      <div class="review-detail-row">
-        <span class="review-detail-label">Reviewers</span>
-        <span class="review-detail-value">${review.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name} (${rv.status})${rv.comment ? ': ' + rv.comment : ''}</span>`).join(' ')}</span>
-      </div>
-      <div class="review-detail-row">
-        <span class="review-detail-label">Created</span>
-        <span class="review-detail-value">${new Date(review.createdAt).toLocaleString()}</span>
-      </div>
-
+      <div class="review-detail-row"><span class="review-detail-label">ID</span><span class="review-detail-value"><code>${review.id}</code></span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Merger</span><span class="review-detail-value">${review.merger}</span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Review Type</span><span class="review-detail-value">${review.reviewType}</span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Priority</span><span class="review-detail-value"><span class="priority-badge ${review.priority}">${review.priority}</span></span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Status</span><span class="review-detail-value"><span class="status-badge ${review.status}">${formatStatus(review.status)}</span></span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Approvals</span><span class="review-detail-value">${review.approvalCount}/${review.reviewers.length}</span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Reviewers</span><span class="review-detail-value">${review.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name} (${rv.status})${rv.comment ? ': ' + rv.comment : ''}</span>`).join(' ')}</span></div>
+      <div class="review-detail-row"><span class="review-detail-label">Created</span><span class="review-detail-value">${new Date(review.createdAt).toLocaleString()}</span></div>
+      ${review.commits?.length ? `<div class="review-detail-row"><span class="review-detail-label">Commits</span><span class="review-detail-value"><code>${review.commits.join(', ')}</code></span></div>` : ''}
+      ${review.size ? `<div class="review-detail-row"><span class="review-detail-label">Size</span><span class="review-detail-value">${review.size}</span></div>` : ''}
       ${escalationHTML}
-
       <div style="margin-top: 1rem;">
         <h4 style="margin-bottom: 0.5rem;">Add Comment</h4>
         <div class="form-row" style="margin-bottom: 0;">
@@ -405,11 +312,8 @@ async function openReviewModal(id) {
         </div>
         <button class="btn btn-sm btn-secondary" style="margin-top: 0.5rem;" onclick="addComment('${id}')">Post Comment</button>
       </div>
-
       ${commentsHTML}
-
-      ${actionsHTML ? `<div class="action-bar">${actionsHTML}</div>` : ''}
-    `;
+      ${actionsHTML ? `<div class="action-bar">${actionsHTML}</div>` : ''}`;
 
     modal.style.display = 'flex';
   } catch (err) {
@@ -424,12 +328,13 @@ function closeModal() {
 document.querySelector('.modal-backdrop')?.addEventListener('click', closeModal);
 
 async function deleteReview(id) {
-  if (!confirm('Delete this review? Assigned reviewers will have their load reduced.')) return;
+  if (!confirm(`Delete review ${id}?`)) return;
   try {
     await API.deleteReview(id, currentUser.role, currentUser.name);
     loadReviews();
     loadReviewers();
     loadMyReviews();
+    if (typeof loadAllReviews === 'function') loadAllReviews();
   } catch (err) {
     alert(err.message);
   }
@@ -451,12 +356,7 @@ function promptDisapprove(id) {
   const comment = prompt('Reason for disapproval:');
   if (comment !== null) {
     API.disapproveReview(id, currentUser.name, comment)
-      .then(() => {
-        closeModal();
-        loadReviews();
-        loadReviewers();
-        loadMyReviews();
-      })
+      .then(() => { closeModal(); loadReviews(); loadReviewers(); loadMyReviews(); })
       .catch(err => alert(err.message));
   }
 }
@@ -478,11 +378,7 @@ function promptEscalate(id) {
   const reason = prompt('Reason for escalation:');
   if (reason !== null) {
     API.escalateReview(id, currentUser.name, reason, currentUser.role)
-      .then(() => {
-        closeModal();
-        loadReviews();
-        loadMyReviews();
-      })
+      .then(() => { closeModal(); loadReviews(); loadMyReviews(); })
       .catch(err => alert(err.message));
   }
 }
@@ -521,9 +417,7 @@ function setupAdminForms() {
       alert('Role updated');
       loadAdminData();
       loadReviewers();
-    } catch (err) {
-      alert(err.message);
-    }
+    } catch (err) { alert(err.message); }
   });
 
   document.getElementById('load-form').addEventListener('submit', async (e) => {
@@ -535,128 +429,7 @@ function setupAdminForms() {
       alert(`Load set to ${load} for ${name}`);
       loadAdminData();
       loadReviewers();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('manual-review-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const branch = document.getElementById('manual-branch').value.trim();
-    const merger = document.getElementById('manual-merger').value;
-    const reviewType = document.getElementById('manual-type').value;
-    const priority = document.getElementById('manual-priority').value;
-    const selectedReviewers = Array.from(document.querySelectorAll('#manual-reviewers-list input:checked')).map(cb => cb.value);
-
-    if (selectedReviewers.length === 0) {
-      alert('Select at least one reviewer');
-      return;
-    }
-
-    try {
-      const review = await API.createManualReview(branch, merger, reviewType, priority, selectedReviewers);
-      alert(`Review ${review.id} created with reviewers: ${review.reviewers.map(r => r.name).join(', ')}`);
-      document.getElementById('manual-review-form').reset();
-      loadAdminData();
-      loadReviewers();
-      loadReviews();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('add-reviewer-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('add-name').value.trim();
-    const speciality = document.getElementById('add-speciality').value;
-    const role = document.getElementById('add-role').value;
-    try {
-      await API.addReviewer(name, speciality, role);
-      alert('User added');
-      document.getElementById('add-reviewer-form').reset();
-      loadAdminData();
-      loadReviewers();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('delete-review-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('delete-review-select').value;
-    if (!id) return;
-    if (!confirm('Delete this review?')) return;
-    try {
-      await API.deleteReview(id, currentUser.role, currentUser.name);
-      alert('Review deleted');
-      loadAdminData();
-      loadReviews();
-      loadReviewers();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('email-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('email-user-select').value;
-    const email = document.getElementById('email-input').value.trim();
-    try {
-      await API.setEmail(name, email);
-      alert('Email saved');
-      loadAdminData();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('remove-reviewer-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('remove-user-select').value;
-    if (!confirm(`Remove ${name}?`)) return;
-    try {
-      await API.removeReviewer(name);
-      alert('User removed');
-      loadAdminData();
-      loadReviewers();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('csv-import-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fileInput = document.getElementById('csv-file');
-    if (!fileInput.files.length) {
-      alert('Select a CSV file');
-      return;
-    }
-
-    const file = fileInput.files[0];
-    const text = await file.text();
-
-    if (!confirm('This will replace all reviewers (except admin/senior/scrum_master/manager). Continue?')) return;
-
-    try {
-      await API.importCSV(text);
-      alert('CSV imported');
-      loadAdminData();
-      loadReviewers();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.getElementById('settings-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const reviewersPerRequest = parseInt(document.getElementById('setting-reviewers').value);
-    const maxLoad = parseInt(document.getElementById('setting-max-load').value);
-    try {
-      await API.updateSettings({ reviewersPerRequest, maxLoad });
-      alert('Settings saved');
-    } catch (err) {
-      alert(err.message);
-    }
+    } catch (err) { alert(err.message); }
   });
 }
 
@@ -664,133 +437,84 @@ async function loadAdminData() {
   try {
     const reviewers = await API.getReviewers();
     const settings = await API.getSettings();
-    const { active } = await API.getReviews();
 
     const roleSelect = document.getElementById('role-user-select');
-    const removeSelect = document.getElementById('remove-user-select');
-    const pwSelect = document.getElementById('pw-user-select');
-    const emailSelect = document.getElementById('email-user-select');
-    const deleteSelect = document.getElementById('delete-review-select');
     const loadSelect = document.getElementById('load-user-select');
-    const mergerSelect = document.getElementById('manual-merger');
+    const pwSelect = document.getElementById('pw-user-select');
+    [roleSelect, loadSelect, pwSelect].forEach(sel => sel.innerHTML = '');
 
-    [roleSelect, removeSelect, pwSelect, emailSelect, loadSelect].forEach(sel => sel.innerHTML = '');
-
-    const nonAdmin = reviewers.filter(r => r.role !== 'admin');
-
-    nonAdmin.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
-      const opt1 = document.createElement('option');
-      opt1.value = r.name;
-      opt1.textContent = `${r.name} (${r.role})`;
-      roleSelect.appendChild(opt1);
-
-      const opt2 = document.createElement('option');
-      opt2.value = r.name;
-      opt2.textContent = r.name;
-      removeSelect.appendChild(opt2);
-
-      const opt3 = document.createElement('option');
-      opt3.value = r.name;
-      opt3.textContent = r.name;
-      pwSelect.appendChild(opt3);
-
-      const opt4 = document.createElement('option');
-      opt4.value = r.name;
-      opt4.textContent = r.name;
-      emailSelect.appendChild(opt4);
-
-      const opt5 = document.createElement('option');
-      opt5.value = r.name;
-      opt5.textContent = `${r.name} (load: ${r.load})`;
-      loadSelect.appendChild(opt5);
-    });
-
-    if (loadSelect.options.length > 0) {
-      loadSelect.addEventListener('change', () => {
-        const selected = reviewers.find(r => r.name === loadSelect.value);
-        if (selected) {
-          document.getElementById('load-input').value = selected.load;
-        }
+    reviewers.filter(r => r.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+      [roleSelect, loadSelect, pwSelect].forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = r.name;
+        opt.textContent = `${r.name} (${r.role})`;
+        s.appendChild(opt);
       });
-      loadSelect.dispatchEvent(new Event('change'));
-    }
-
-    mergerSelect.innerHTML = '';
-    reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
-      const opt = document.createElement('option');
-      opt.value = r.name;
-      opt.textContent = r.name;
-      if (r.name === currentUser.name) opt.selected = true;
-      mergerSelect.appendChild(opt);
     });
 
-    const reviewersList = document.getElementById('manual-reviewers-list');
-    reviewersList.innerHTML = '';
-    const reviewableReviewers = reviewers.filter(r => r.role === 'reviewer' || r.role === 'senior');
-    reviewableReviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
-      const label = document.createElement('label');
-      label.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer;';
-      label.innerHTML = `<input type="checkbox" value="${r.name}"> ${r.name} (${r.load}/${r.speciality})`;
-      reviewersList.appendChild(label);
+    loadSelect.addEventListener('change', () => {
+      const selected = reviewers.find(r => r.name === loadSelect.value);
+      if (selected) document.getElementById('load-input').value = selected.load;
     });
+    loadSelect.dispatchEvent(new Event('change'));
 
-    deleteSelect.innerHTML = '<option value="">-- Select review --</option>';
-    active.forEach(r => {
-      const opt = document.createElement('option');
-      opt.value = r.id;
-      opt.textContent = `${r.branch} (${r.merger}) - ${formatStatus(r.status)}`;
-      deleteSelect.appendChild(opt);
-    });
-
-    document.getElementById('setting-reviewers').value = settings.reviewersPerRequest || 3;
-    document.getElementById('setting-max-load').value = settings.maxLoad || 3;
-
-    renderPasswordStatus(reviewers);
     loadPasswords();
-
-    if (currentUser.role === 'manager') {
-      document.getElementById('admin-manage-roles').style.display = 'none';
-      document.getElementById('admin-manage-load').style.display = 'none';
-      document.getElementById('admin-manual-review').style.display = 'none';
-      document.getElementById('admin-add-reviewer').style.display = 'none';
-      document.getElementById('admin-passwords').style.display = 'none';
-      document.getElementById('admin-emails').style.display = 'none';
-      document.getElementById('admin-csv-import').style.display = 'none';
-      document.getElementById('admin-remove-user').style.display = 'none';
-      document.getElementById('admin-settings').style.display = 'none';
-      document.getElementById('admin-password-status').style.display = 'block';
-    } else {
-      document.getElementById('admin-manage-roles').style.display = 'block';
-      document.getElementById('admin-manage-load').style.display = 'block';
-      document.getElementById('admin-manual-review').style.display = 'block';
-      document.getElementById('admin-add-reviewer').style.display = 'block';
-      document.getElementById('admin-passwords').style.display = 'block';
-      document.getElementById('admin-emails').style.display = 'block';
-      document.getElementById('admin-csv-import').style.display = 'block';
-      document.getElementById('admin-remove-user').style.display = 'block';
-      document.getElementById('admin-settings').style.display = 'block';
-      document.getElementById('admin-password-status').style.display = 'block';
-    }
   } catch (err) {
     console.error('Failed to load admin data:', err);
   }
 }
 
-function renderPasswordStatus(reviewers) {
-  const tbody = document.getElementById('password-status-body');
-  tbody.innerHTML = '';
+async function adminSetPassword() {
+  const name = document.getElementById('pw-user-select').value;
+  const password = document.getElementById('pw-set-input').value.trim();
+  const resultEl = document.getElementById('pw-result');
+  if (!name || !password) { resultEl.textContent = 'Select a user and enter a password'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
+  try {
+    await API.setUserPassword(name, password);
+    resultEl.textContent = `Password set for ${name}`;
+    resultEl.className = 'success-msg';
+    resultEl.style.display = 'block';
+    document.getElementById('pw-set-input').value = '';
+    loadAdminData();
+  } catch (err) { resultEl.textContent = err.message; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; }
+}
 
-  reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${r.name}</strong></td>
-      <td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td>
-      <td>${r.hasPassword ? '<span class="status-badge approved">Yes</span>' : '<span class="status-badge pending">No</span>'}</td>
-      <td>${r.email || '<span style="color: var(--text-muted);">Not set</span>'}</td>
-      <td>${r.discordId ? `<button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>` : '<span style="color: var(--text-muted);">Not linked</span>'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+async function adminResetPassword() {
+  const name = document.getElementById('pw-user-select').value;
+  const resultEl = document.getElementById('pw-result');
+  if (!name) { resultEl.textContent = 'Select a user first'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
+  try {
+    const data = await API.resetPassword(name, currentUser.role);
+    resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
+    resultEl.className = 'success-msg';
+    resultEl.style.display = 'block';
+    loadAdminData();
+  } catch (err) { resultEl.textContent = err.message; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; }
+}
+
+async function loadPasswords() {
+  try {
+    const passwords = await API.getAdminPasswords(currentUser.role);
+    const tbody = document.getElementById('admin-passwords-body');
+    tbody.innerHTML = '';
+    passwords.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+      const tr = document.createElement('tr');
+      const discordCell = r.discordId ? `<span style="color: var(--success); font-size: 0.75rem;">Linked</span> <button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>` : '<span style="color: var(--text-muted); font-size: 0.75rem;">Not linked</span>';
+      tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><code>${r.plainPassword || 'Not set'}</code></td><td>${discordCell}</td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (err) { console.error('Failed to load passwords:', err); }
+}
+
+async function adminResetPasswordByName(name) {
+  const resultEl = document.getElementById('pw-result');
+  try {
+    const data = await API.resetPassword(name, currentUser.role);
+    resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
+    resultEl.className = 'success-msg';
+    resultEl.style.display = 'block';
+    loadAdminData();
+  } catch (err) { resultEl.textContent = err.message; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; }
 }
 
 async function unlinkDiscord(name) {
@@ -799,109 +523,11 @@ async function unlinkDiscord(name) {
     await API.unlinkDiscord(name);
     alert(`Discord link removed for ${name}`);
     loadAdminData();
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-async function adminSetPassword() {
-  const name = document.getElementById('pw-user-select').value;
-  const password = document.getElementById('pw-set-input').value.trim();
-  const resultEl = document.getElementById('pw-result');
-
-  if (!name || !password) {
-    resultEl.textContent = 'Select a user and enter a password';
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-    return;
-  }
-
-  try {
-    await API.setUserPassword(name, password);
-    resultEl.textContent = `Password set for ${name}`;
-    resultEl.className = 'success-msg';
-    resultEl.style.display = 'block';
-    document.getElementById('pw-set-input').value = '';
-    loadAdminData();
-  } catch (err) {
-    resultEl.textContent = err.message;
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-  }
-}
-
-async function adminResetPassword() {
-  const name = document.getElementById('pw-user-select').value;
-  const resultEl = document.getElementById('pw-result');
-
-  if (!name) {
-    resultEl.textContent = 'Select a user first';
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-    return;
-  }
-
-  try {
-    const data = await API.resetPassword(name, currentUser.role);
-    resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
-    resultEl.className = 'success-msg';
-    resultEl.style.display = 'block';
-    loadAdminData();
-  } catch (err) {
-    resultEl.textContent = err.message;
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-  }
-}
-
-async function loadPasswords() {
-  try {
-    const passwords = await API.getAdminPasswords(currentUser.role);
-    const tbody = document.getElementById('admin-passwords-body');
-    tbody.innerHTML = '';
-
-    passwords.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${r.name}</strong></td>
-        <td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td>
-        <td><code style="background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${r.plainPassword}</code></td>
-        <td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error('Failed to load passwords:', err);
-  }
-}
-
-async function adminResetPasswordByName(name) {
-  const resultEl = document.getElementById('pw-result');
-
-  try {
-    const data = await API.resetPassword(name, currentUser.role);
-    resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: var(--bg-input); padding: 0.25rem 0.5rem; border-radius: 4px;">${data.password}</code>`;
-    resultEl.className = 'success-msg';
-    resultEl.style.display = 'block';
-    loadAdminData();
-  } catch (err) {
-    resultEl.textContent = err.message;
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-  }
+  } catch (err) { alert(err.message); }
 }
 
 function formatStatus(status) {
-  const map = {
-    in_review: 'In Review',
-    fix_needed: 'Fix Needed',
-    fix_made: 'Fix Made',
-    escalated: 'Escalated',
-    approved: 'Approved',
-    rejected: 'Rejected',
-    deleted: 'Deleted',
-    pending: 'Pending'
-  };
+  const map = { in_review: 'In Review', fix_needed: 'Fix Needed', fix_made: 'Fix Made', escalated: 'Escalated', approved: 'Approved', rejected: 'Rejected', deleted: 'Deleted', pending: 'Pending' };
   return map[status] || status;
 }
 
@@ -916,9 +542,9 @@ async function loadAllReviews() {
     if (all.length === 0) { empty.style.display = 'block'; countEl.textContent = ''; return; }
     empty.style.display = 'none';
     countEl.textContent = `(${all.length} total)`;
+    const canEdit = currentUser.role === 'admin' || currentUser.role === 'manager';
     all.forEach(r => {
       const tr = document.createElement('tr');
-      const canEdit = currentUser.role === 'admin' || currentUser.role === 'manager';
       tr.innerHTML = `
         <td><code>${r.id}</code></td>
         <td><code>${r.branch}</code></td>
@@ -927,23 +553,16 @@ async function loadAllReviews() {
         <td>${r.approvalCount}/${r.reviewers.length}</td>
         <td><span class="priority-badge ${r.priority}">${r.priority}</span></td>
         <td style="font-size:0.75rem;color:var(--text-muted)">${r.size || '—'}</td>
-        <td>${canEdit ? `
-          <select onchange="updateReviewStatus('${r.id}', this.value)" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:0.25rem;font-size:0.75rem;">
-            ${['pending','in_review','fix_needed','fix_made','escalated','approved','rejected','deleted'].map(s =>
-              `<option value="${s}" ${r.status === s ? 'selected' : ''}>${formatStatus(s)}</option>`
-            ).join('')}
-          </select>` : `<span class="status-badge ${r.status}">${formatStatus(r.status)}</span>`}
+        <td>${canEdit ? `<select onchange="updateReviewStatus('${r.id}', this.value)" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:0.25rem;font-size:0.75rem;">${['pending','in_review','fix_needed','fix_made','escalated','approved','rejected','deleted'].map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${formatStatus(s)}</option>`).join('')}</select>` : `<span class="status-badge ${r.status}">${formatStatus(r.status)}</span>`}
         </td>
         <td style="font-size:0.75rem;color:var(--text-muted)">${new Date(r.createdAt).toLocaleDateString()}</td>
         <td>
           <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">Details</button>
-          ${canEdit ? `<button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
+          ${canEdit && r.status !== 'deleted' ? `<button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
         </td>`;
       tbody.appendChild(tr);
     });
-  } catch (err) {
-    console.error('Failed to load all reviews:', err);
-  }
+  } catch (err) { console.error('Failed to load all reviews:', err); }
 }
 
 async function updateReviewStatus(id, newStatus) {
@@ -951,19 +570,13 @@ async function updateReviewStatus(id, newStatus) {
     await API.updateReviewStatus(id, newStatus);
     loadAllReviews();
     loadReviews();
-  } catch (err) {
-    alert(err.message);
-  }
+  } catch (err) { alert(err.message); }
 }
 
 async function loadRawData() {
   try {
     const [reviewsRes, reviewers, settings] = await Promise.all([API.getReviews(), API.getReviewers(), API.getSettings()]);
-    const data = {
-      reviews: [...reviewsRes.active, ...reviewsRes.history],
-      reviewers,
-      settings
-    };
+    const data = { reviews: [...reviewsRes.active, ...reviewsRes.history], reviewers, settings };
     document.getElementById('raw-data-view').textContent = JSON.stringify(data, null, 2);
   } catch (err) {
     document.getElementById('raw-data-view').textContent = 'Error loading data: ' + err.message;
@@ -972,11 +585,7 @@ async function loadRawData() {
 
 function copyRawData() {
   const text = document.getElementById('raw-data-view').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    alert('Raw data copied to clipboard');
-  }).catch(() => {
-    alert('Failed to copy — select and copy manually');
-  });
+  navigator.clipboard.writeText(text).then(() => alert('Raw data copied'), () => alert('Failed to copy — select and copy manually'));
 }
 
 let editingReviewerName = null;
@@ -1023,9 +632,5 @@ async function saveReviewerEdit() {
     loadReviewers();
     loadAdminData();
     setTimeout(closeReviewerModal, 1500);
-  } catch (err) {
-    resultEl.textContent = err.message;
-    resultEl.className = 'error-msg';
-    resultEl.style.display = 'block';
-  }
+  } catch (err) { resultEl.textContent = err.message; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; }
 }
