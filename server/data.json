@@ -498,7 +498,7 @@
         }
       ],
       "approvalCount": 1,
-      "status": "in_review",
+      "status": "deleted",
       "priority": "imp",
       "reviewType": "fullstack",
       "createdAt": "2026-05-20T09:23:24.301Z",
