@@ -162,14 +162,14 @@
     },
     {
       "name": "Reviewer10",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
       "password": "$2b$10$yPdK8adqMqriPzvFsRk2PuposNwF.p5DGiYeq1uwJNi66RZnbK3o6",
       "discordId": "000000000000000011",
       "plainPassword": "ULb9GV2b2KrR",
-      "weeklyCount": 0,
+      "weeklyCount": 1,
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
@@ -194,14 +194,14 @@
     },
     {
       "name": "Reviewer12",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
       "password": "$2b$10$BVO3gH08rtqjUBH/XdeAdO3Z/vrVDjnq71T/Ar5SnCgWgXQH6ERj.",
       "discordId": "000000000000000013",
       "plainPassword": "6V86Uex4yUPv",
-      "weeklyCount": 0,
+      "weeklyCount": 1,
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
@@ -258,14 +258,14 @@
     },
     {
       "name": "Reviewer16",
-      "load": 0,
+      "load": 1,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
       "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6",
       "discordId": "000000000000000015",
       "plainPassword": "q96TCQzVjFju",
-      "weeklyCount": 0,
+      "weeklyCount": 1,
       "weeklyResetAt": "2026-05-28T15:03:39.911Z",
       "currentLargeReview": false,
       "maxActiveReviews": 5,
@@ -830,12 +830,44 @@
       "updatedAt": "2026-05-22T06:11:08.870Z",
       "escalation": null,
       "comments": []
+    },
+    {
+      "id": "REV-18",
+      "branch": "feature/seed-for-reservations",
+      "reviewType": "fullstack",
+      "size": "medium",
+      "commits": [],
+      "merger": "Reviewer08",
+      "reviewers": [
+        {
+          "name": "Reviewer10",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer12",
+          "status": "pending",
+          "notified": false
+        },
+        {
+          "name": "Reviewer16",
+          "status": "pending",
+          "notified": false
+        }
+      ],
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "imp",
+      "createdAt": "2026-05-29T08:33:02.582Z",
+      "updatedAt": "2026-05-29T08:33:02.599Z",
+      "escalation": null,
+      "comments": []
     }
   ],
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
     "adminPassword": "root",
-    "nextReviewNumber": 18
+    "nextReviewNumber": 19
   }
 }
