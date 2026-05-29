@@ -639,7 +639,8 @@ app.get('/api/admin/passwords', (req, res) => {
   res.json(data.reviewers.map(r => ({
     name: r.name,
     role: r.role,
-    plainPassword: r.plainPassword || ''
+    plainPassword: r.plainPassword || '',
+    discordId: r.discordId || ''
   })));
 });
 
@@ -653,6 +654,21 @@ app.post('/api/reviewers/:name/email', (req, res) => {
   reviewer.email = email || '';
   saveData(data, `Email set for ${req.params.name}`);
   res.json({ message: 'Email updated', email: reviewer.email });
+});
+
+app.post('/api/reviewers/:name/link-discord', (req, res) => {
+  const { userRole, discordId } = req.body;
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can link accounts' });
+  }
+  const data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+  if (!discordId) return res.status(400).json({ error: 'discordId required' });
+
+  reviewer.discordId = discordId;
+  saveData(data, `Discord link set for ${req.params.name}`);
+  res.json({ message: `Discord linked to ${reviewer.name}`, discordId });
 });
 
 app.post('/api/reviewers/:name/unlink', (req, res) => {
