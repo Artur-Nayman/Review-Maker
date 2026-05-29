@@ -36,7 +36,7 @@ function withTimeout(promise, ms = 30000) {
   ]);
 }
 
-client.once('ready', async () => {
+client.on('clientReady', async () => {
   const db = require('../server/db');
   try {
     await db.init();
