@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { getReviewerByDiscordId, loadData, saveData, migrateReviewerFields, determineReviewSize } = require('./utils/data');
+const { getReviewerByDiscordId, loadData, saveData, determineReviewSize } = require('./utils/data');
 const { approveReview, disapproveReview, getReviewById, incrementReviewerLoads } = require('./utils/reviews');
 const { createReviewEmbed, createErrorEmbed, createSuccessEmbed, getReviewerMention } = require('./utils/embeds');
 
@@ -36,7 +36,7 @@ function withTimeout(promise, ms = 30000) {
   ]);
 }
 
-client.on('clientReady', async () => {
+client.once('ready', async () => {
   const db = require('../server/db');
   try {
     await db.init();
@@ -45,14 +45,11 @@ client.on('clientReady', async () => {
   }
 
   console.log(`Logged in as ${client.user.tag}`);
-  console.log(`Bot is in ${client.guilds.cache.size} servers`);
-
-  // Migrate reviewer fields on startup
   try {
-    const data = loadData();
-    migrateReviewerFields(data);
-  } catch (err) {
-    console.error('[Startup] Migration failed:', err.message);
+    const guilds = await client.guilds.fetch();
+    console.log(`Bot is in ${guilds.size} servers`);
+  } catch (e) {
+    console.error('Failed to fetch guilds:', e.message);
   }
 
   // Auto-pull with safety check
