@@ -1,17 +1,12 @@
-const { loadData, saveData, getReviewerByName, isReviewableRole, generateReviewId, findReviewById, getReviewerCapacity, resetWeeklyCountsIfNeeded, determineReviewSize } = require('./data');
+const { loadData, saveData, getReviewerByName, isReviewableRole, generateReviewId, findReviewById } = require('./data');
 
-function selectReviewers(data, reviewType, count, excludeName, size) {
-  resetWeeklyCountsIfNeeded(data);
-  const sizeToUse = size || determineReviewSize(reviewType, []);
-  const available = data.reviewers.filter(r => {
-    if (!isReviewableRole(r.role)) return false;
-    if (r.name.toLowerCase() === excludeName?.toLowerCase()) return false;
-    const cap = getReviewerCapacity(data, r);
-    if (cap.weeklyRemaining <= 0) return false;
-    if (cap.atCapacity) return false;
-    if (sizeToUse === 'large' && !cap.canTakeLarge) return false;
-    return true;
-  });
+function selectReviewers(data, reviewType, count, excludeName) {
+  const maxLoad = data.settings.maxLoad || 3;
+  const available = data.reviewers.filter(r =>
+    isReviewableRole(r.role) &&
+    r.load < maxLoad &&
+    r.name.toLowerCase() !== excludeName?.toLowerCase()
+  );
 
   if (available.length === 0) return [];
 
@@ -34,60 +29,47 @@ function selectReviewers(data, reviewType, count, excludeName, size) {
   return selected;
 }
 
-function incrementReviewerLoads(data, reviewers, size) {
+function incrementReviewerLoads(data, reviewers) {
   for (const rv of reviewers) {
     const reviewer = getReviewerByName(data, rv.name);
-    if (reviewer) {
-      reviewer.load = Math.min(reviewer.load + 1, 999);
-      reviewer.weeklyCount = (reviewer.weeklyCount || 0) + 1;
-      if (size === 'large') {
-        reviewer.currentLargeReview = true;
-      }
-    }
+    if (reviewer) reviewer.load = Math.min(reviewer.load + 1, data.settings.maxLoad || 3);
   }
 }
 
-function decrementReviewerLoad(data, name, wasLarge) {
+function decrementReviewerLoad(data, name) {
   const reviewer = getReviewerByName(data, name);
-  if (reviewer) {
-    reviewer.load = Math.max(reviewer.load - 1, 0);
-    if (wasLarge) {
-      reviewer.currentLargeReview = false;
-    }
-  }
+  if (reviewer) reviewer.load = Math.max(reviewer.load - 1, 0);
 }
 
 function getSeniorReviewer(data) {
   return data.reviewers.find(r => r.role === 'senior');
 }
 
-function createReview(branch, merger, reviewType, priority, commits) {
+function createReview(branch, merger, reviewType, priority, commitRef = '') {
   const data = loadData();
   const count = data.settings.reviewersPerRequest || 3;
-  const size = determineReviewSize(reviewType, commits);
-  const reviewers = selectReviewers(data, reviewType, count, merger, size);
+  const reviewers = selectReviewers(data, reviewType, count, merger);
 
   if (reviewers.length === 0) {
-    throw new Error('No available reviewers (all at weekly capacity or large limit)');
+    throw new Error('No available reviewers (all at max load)');
   }
 
-  incrementReviewerLoads(data, reviewers, size);
+  incrementReviewerLoads(data, reviewers);
 
   const review = {
     id: generateReviewId(data),
     branch,
-    reviewType,
-    size,
-    commits: commits || [],
     merger,
     reviewers,
     approvalCount: 0,
     status: 'in_review',
     priority,
+    reviewType,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     escalation: null,
-    comments: []
+    comments: [],
+    commitRef
   };
 
   data.reviews.push(review);
@@ -114,7 +96,7 @@ function approveReview(id, reviewerName) {
   review.approvalCount++;
   review.updatedAt = new Date().toISOString();
 
-  decrementReviewerLoad(data, reviewerName, review.size === 'large');
+  decrementReviewerLoad(data, reviewerName);
 
   if (review.approvalCount >= data.settings.reviewersPerRequest) {
     review.status = 'approved';
@@ -122,14 +104,6 @@ function approveReview(id, reviewerName) {
 
   saveData(data, `Review ${id} approved by ${reviewerName}`);
   return review;
-}
-
-function checkAndClearLargeForRemaining(data, review) {
-  for (const rv of review.reviewers) {
-    if (rv.status === 'pending') {
-      decrementReviewerLoad(data, rv.name, review.size === 'large');
-    }
-  }
 }
 
 function disapproveReview(id, reviewerName, comment) {
@@ -151,7 +125,7 @@ function disapproveReview(id, reviewerName, comment) {
   review.status = 'fix_needed';
   review.updatedAt = new Date().toISOString();
 
-  decrementReviewerLoad(data, reviewerName, review.size === 'large');
+  decrementReviewerLoad(data, reviewerName);
 
   saveData(data, `Review ${id} disapproved by ${reviewerName}`);
   return review;
@@ -174,20 +148,11 @@ function markFixDone(id) {
       rv.status = 'pending';
       rv.comment = '';
       rv.respondedAt = null;
-      incrementReviewerLoadForOne(data, rv.name, review.size === 'large');
     }
   }
 
   saveData(data, `Review ${id} marked fix-done`);
   return review;
-}
-
-function incrementReviewerLoadForOne(data, name, isLarge) {
-  const reviewer = getReviewerByName(data, name);
-  if (reviewer) {
-    reviewer.load = Math.min(reviewer.load + 1, 999);
-    if (isLarge) reviewer.currentLargeReview = true;
-  }
 }
 
 function escalateReview(id, mergerName, reason, userRole) {
@@ -243,7 +208,7 @@ function escalationDecide(id, seniorName, decision) {
 
   for (const rv of review.reviewers) {
     if (rv.status === 'disapproved') {
-      decrementReviewerLoad(data, rv.name, review.size === 'large');
+      decrementReviewerLoad(data, rv.name);
     }
   }
 

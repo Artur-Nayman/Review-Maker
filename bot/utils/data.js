@@ -1,124 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const simpleGit = require('simple-git');
+const { loadData, saveData, logAudit, generateReviewId: dbGenerateReviewId } = require('../../server/db');
 
-const DATA_PATH = path.join(__dirname, '..', '..', 'server', 'data.json');
-const REPO_DIR = path.join(__dirname, '..', '..');
-const git = simpleGit(REPO_DIR);
-
-let isGitBusy = false;
-
-function loadData() {
-  const raw = fs.readFileSync(DATA_PATH, 'utf-8');
-  return JSON.parse(raw);
+function load() {
+  return loadData();
 }
 
-let saveQueue = Promise.resolve();
-
-function withTimeout(promise, ms = 30000) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`Git operation timed out after ${ms}ms`)), ms))
-  ]);
-}
-
-function saveData(data, commitMsg) {
-  const tmp = DATA_PATH + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
-  fs.renameSync(tmp, DATA_PATH);
-
-  if (!commitMsg) return;
-
-  saveQueue = saveQueue.then(async () => {
-    if (isGitBusy) return;
-    isGitBusy = true;
-    try {
-      await withTimeout(git.add('server/data.json'));
-      const status = await withTimeout(git.status());
-      if (status.files.length === 0) return;
-      await withTimeout(git.commit(commitMsg, '--no-verify'));
-      await withTimeout(git.push('origin', (await git.branch()).current, ['--no-verify']));
-    } catch (err) {
-      if (err.message.includes('non-fast-forward') || err.message.includes('conflict')) {
-        try {
-          await withTimeout(git.pull('origin', (await git.branch()).current, ['--rebase', '--no-verify']));
-          console.warn('[Bot Git] Conflict on push, rebased. Retrying push...');
-          await withTimeout(git.add('server/data.json'));
-          await withTimeout(git.commit(commitMsg + ' (after rebase)', '--no-verify'));
-          await withTimeout(git.push('origin', (await git.branch()).current, ['--no-verify']));
-        } catch (retryErr) {
-          console.error('[Bot Git] Failed to push after rebase:', retryErr.message);
-        }
-      } else {
-        console.error('[Bot Git] Push failed:', err.message);
-      }
-    } finally {
-      isGitBusy = false;
-    }
-  });
-}
-
-function migrateReviewerFields(data) {
-  let changed = false;
-  const now = new Date();
-  for (const r of data.reviewers) {
-    if (r.weeklyCount === undefined) {
-      r.weeklyCount = 0;
-      r.weeklyResetAt = now.toISOString();
-      changed = true;
-    }
-    if (r.currentLargeReview === undefined) {
-      r.currentLargeReview = false;
-      changed = true;
-    }
-    if (r.maxActiveReviews === undefined) {
-      r.maxActiveReviews = data.settings.maxWeeklyReviews || 5;
-      changed = true;
-    }
-    if (r.maxLargeSimultaneous === undefined) {
-      r.maxLargeSimultaneous = data.settings.maxLargeSimultaneous || 1;
-      changed = true;
-    }
-    if (r.maxLoad === undefined) {
-      r.maxLoad = data.settings.maxLoad || 3;
-      changed = true;
-    }
-  }
-  if (changed) {
-    saveData(data, 'Migrated reviewer fields');
-  }
-}
-
-function resetWeeklyCountsIfNeeded(data) {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - daysSinceMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  for (const r of data.reviewers) {
-    const resetDate = new Date(r.weeklyResetAt);
-    if (resetDate < monday) {
-      r.weeklyCount = 0;
-      r.weeklyResetAt = now.toISOString();
-    }
-  }
-}
-
-function getReviewerCapacity(data, reviewer) {
-  resetWeeklyCountsIfNeeded(data);
-  const maxWeekly = reviewer.maxActiveReviews || data.settings.maxWeeklyReviews || 5;
-  const maxLarge = reviewer.maxLargeSimultaneous || data.settings.maxLargeSimultaneous || 1;
-  const maxLoad = reviewer.maxLoad || data.settings.maxLoad || 3;
-  return {
-    weeklyRemaining: Math.max(0, maxWeekly - (reviewer.weeklyCount || 0)),
-    canTakeLarge: !reviewer.currentLargeReview,
-    atCapacity: (reviewer.load || 0) >= maxLoad,
-    maxWeekly,
-    maxLarge,
-    maxLoad
-  };
+function save(data, commitMsg) {
+  return saveData(data, commitMsg);
 }
 
 function getReviewerByName(data, name) {
@@ -156,9 +43,7 @@ function generateOTP() {
 }
 
 function generateReviewId(data) {
-  const num = data.settings.nextReviewNumber || 1;
-  data.settings.nextReviewNumber = num + 1;
-  return `REV-${num}`;
+  return dbGenerateReviewId(data);
 }
 
 function findReviewById(data, id) {
@@ -180,22 +65,9 @@ function getReviewerMention(data, reviewerName) {
   return reviewerName;
 }
 
-function determineReviewSize(reviewType, commits) {
-  if (reviewType === 'commit') {
-    const count = commits ? commits.length : 1;
-    if (count >= 3) return 'large';
-    if (count === 2) return 'medium';
-    return 'small';
-  }
-  return 'medium';
-}
-
 module.exports = {
-  loadData,
-  saveData,
-  migrateReviewerFields,
-  resetWeeklyCountsIfNeeded,
-  getReviewerCapacity,
+  loadData: load,
+  saveData: save,
   getReviewerByName,
   getReviewerByDiscordId,
   isReviewableRole,
@@ -204,6 +76,5 @@ module.exports = {
   generateOTP,
   generateReviewId,
   findReviewById,
-  getReviewerMention,
-  determineReviewSize
+  getReviewerMention
 };
