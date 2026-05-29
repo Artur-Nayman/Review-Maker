@@ -733,6 +733,8 @@ app.get('/', (req, res) => {
 });
 
 async function startServer() {
+  const db = require('./db');
+  await db.init();
   const data = loadData();
   await migratePasswords(data);
 

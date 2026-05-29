@@ -36,7 +36,14 @@ function withTimeout(promise, ms = 30000) {
   ]);
 }
 
-client.on('clientReady', () => {
+client.on('clientReady', async () => {
+  const db = require('../server/db');
+  try {
+    await db.init();
+  } catch (e) {
+    console.error('[DB] Init failed:', e.message);
+  }
+
   console.log(`Logged in as ${client.user.tag}`);
   console.log(`Bot is in ${client.guilds.cache.size} servers`);
 
