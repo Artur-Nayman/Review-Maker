@@ -744,8 +744,65 @@ app.put('/api/settings', (req, res) => {
   res.json(data.settings);
 });
 
+app.get('/api/health', (req, res) => {
+  try {
+    const data = loadData();
+    res.json({
+      status: 'ok',
+      db: data && data.reviewers ? 'ok' : 'error',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      db: 'error',
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
+});
+
+// --- Season Groups (Google Sheets) ---
+app.post('/api/sheets/new-group', async (req, res) => {
+  const { userRole } = req.body;
+  if (userRole !== 'admin' && userRole !== 'manager') {
+    return res.status(403).json({ error: 'Only admin/manager can create new groups' });
+  }
+  try {
+    const { createSeasonTab } = require('./season-groups');
+    const result = await createSeasonTab();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/sheets/next-group-name', (req, res) => {
+  try {
+    const { getNextTabName } = require('./season-groups');
+    res.json({ tabName: getNextTabName() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/sheets/sync-discord', (req, res) => {
+  const { userRole } = req.body;
+  if (userRole !== 'admin' && userRole !== 'manager') {
+    return res.status(403).json({ error: 'Only admin/manager can sync' });
+  }
+  try {
+    const data = loadData();
+    require('./discord-sync').bulkSyncDiscordApprovals(data);
+    res.json({ message: 'Discord approvals synced' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 async function startServer() {
@@ -753,6 +810,14 @@ async function startServer() {
   await db.init();
   const data = loadData();
   await migratePasswords(data);
+
+  try {
+    const { bulkSyncDiscordApprovals } = require('./discord-sync');
+    bulkSyncDiscordApprovals(data);
+    console.log('[DiscordSync] Initial sync complete');
+  } catch (e) {
+    console.log('[DiscordSync] Initial sync skipped:', e.message);
+  }
 
   app.listen(PORT, () => {
     console.log(`\nReview Maker running at http://localhost:${PORT}`);

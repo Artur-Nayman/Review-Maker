@@ -270,6 +270,16 @@ function saveData(data, commitMsg) {
     db.run('ROLLBACK');
     throw e;
   }
+
+  try {
+    const hasReviews = (data.reviews || []).length > 0;
+    if (hasReviews) {
+      const { syncDiscordApprovals } = require('./discord-sync');
+      syncDiscordApprovals(data);
+    }
+  } catch (e) {
+    // Discord sync is best-effort
+  }
 }
 
 function generateReviewId(data) {

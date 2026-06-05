@@ -159,6 +159,29 @@
       <div class="card full-width">
         <h2>Admin Panel</h2>
 
+        <div class="admin-section" id="admin-season-groups">
+          <h3>New Season Group</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
+            Creates a new Google Sheets tab for the upcoming season's merge requests.
+            Next name: <strong id="next-group-name">...</strong>
+          </p>
+          <div class="form-row" style="gap:0.5rem;">
+            <button class="btn btn-primary" onclick="createNewGroup()">Create New Group</button>
+            <button class="btn btn-ghost" onclick="loadNextGroupName()">Refresh Name</button>
+          </div>
+          <div id="group-result" style="margin-top:0.75rem;"></div>
+        </div>
+
+        <div class="admin-section" id="admin-sync">
+          <h3>Sync Discord Approvals</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
+            Updates the "Discord Approvals" column (U) in the Merge Requests tab
+            with approval data from the review system.
+          </p>
+          <button class="btn btn-primary" onclick="syncDiscordApprovals()">Sync Now</button>
+          <div id="sync-result" style="margin-top:0.75rem;"></div>
+        </div>
+
         <div class="admin-section" id="admin-manage-roles">
           <h3>Change Role</h3>
           <form id="role-form">

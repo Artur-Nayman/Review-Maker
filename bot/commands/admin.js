@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const bcrypt = require('bcryptjs');
-const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity } = require('../utils/data');
+const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity, findReviewById } = require('../utils/data');
 const { createPasswordsEmbed, createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
 
 module.exports = {
@@ -102,6 +102,12 @@ module.exports = {
         .setName('unlink')
         .setDescription('Remove a user Discord link so they can re-link')
         .addStringOption(opt => opt.setName('user').setDescription('User name').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('delete-review')
+        .setDescription('Soft-delete a review by ID (admin only)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
     ),
 
   async execute(interaction) {
@@ -353,6 +359,34 @@ module.exports = {
 
         return interaction.reply({
           embeds: [createSuccessEmbed(`Discord link removed for **${name}**. They need to use \`/link\` again.`)]
+        });
+      }
+
+      case 'delete-review': {
+        const id = interaction.options.getString('id');
+        const review = findReviewById(data, id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed(`Review with ID "${id}" not found`)], ephemeral: true });
+        }
+
+        for (const rv of review.reviewers) {
+          if (rv.status === 'pending') {
+            const reviewer = getReviewerByName(data, rv.name);
+            if (reviewer && reviewer.load > 0) {
+              reviewer.load--;
+            }
+          }
+        }
+
+        review.status = 'deleted';
+        review.deletedBy = user.name;
+        review.deletedAt = new Date().toISOString();
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} deleted by ${user.name}`);
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) has been deleted.`)]
         });
       }
     }

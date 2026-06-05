@@ -6,14 +6,49 @@ const { getReviewerByDiscordId, loadData, saveData, determineReviewSize } = requ
 const { approveReview, disapproveReview, getReviewById, incrementReviewerLoads } = require('./utils/reviews');
 const { createReviewEmbed, createErrorEmbed, createSuccessEmbed, getReviewerMention } = require('./utils/embeds');
 
+const { exec: execCb } = require('child_process');
+const { promisify } = require('util');
+const exec = promisify(execCb);
+
 const simpleGit = require('simple-git');
-const git = simpleGit(path.join(__dirname, '..'));
+const projectRoot = path.join(__dirname, '..');
+const git = simpleGit(projectRoot);
+
+// Check if git is available and repo exists
+let gitAvailable = false;
+(async () => {
+  try {
+    await fs.promises.access(path.join(projectRoot, '.git'));
+    gitAvailable = true;
+  } catch { /* no git repo */ }
+})();
 
 let isGitBusy = false;
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection:', reason instanceof Error ? reason.message : reason);
+  if (reason instanceof Error && reason.stack) {
+    console.error(reason.stack);
+  }
+});
+
+process.on('uncaughtException', (err, origin) => {
+  console.error('[FATAL] Uncaught Exception:', err.message, 'origin:', origin);
+  if (err.stack) console.error(err.stack);
+  process.exit(1);
+});
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
+
+client.health = {
+  startedAt: Date.now(),
+  discord: { status: 'connecting', lastReady: null, lastDisconnect: null, ping: 0 },
+  sheets: { status: 'unknown', lastCheck: null, lastError: null },
+  db: { status: 'unknown', lastCheck: null, lastError: null },
+  git: { lastPull: null, lastPullResult: null }
+};
 
 client.commands = new Collection();
 
@@ -36,6 +71,29 @@ function withTimeout(promise, ms = 30000) {
   ]);
 }
 
+client.on('shardReady', (id) => {
+  client.health.discord.status = 'connected';
+  client.health.discord.lastReady = Date.now();
+  console.log(`[Health] Shard ${id} ready`);
+});
+
+client.on('shardDisconnect', (event, id) => {
+  client.health.discord.status = 'disconnected';
+  client.health.discord.lastDisconnect = Date.now();
+  console.log(`[Health] Shard ${id} disconnected — close code: ${event.code}`);
+});
+
+client.on('shardReconnecting', (id) => {
+  client.health.discord.status = 'reconnecting';
+  console.log(`[Health] Shard ${id} reconnecting...`);
+});
+
+client.on('shardResume', (replayed, id) => {
+  client.health.discord.status = 'connected';
+  client.health.discord.lastReady = Date.now();
+  console.log(`[Health] Shard ${id} resumed (${replayed} events replayed)`);
+});
+
 client.on('clientReady', async () => {
   const db = require('../server/db');
   try {
@@ -45,6 +103,19 @@ client.on('clientReady', async () => {
   }
 
   console.log(`Logged in as ${client.user.tag}`);
+
+  // Auto-deploy slash commands on every start
+  try {
+    const { stdout, stderr } = await withTimeout(
+      exec('node bot/deploy-commands.js', { cwd: path.join(__dirname, '..') }),
+      30000
+    );
+    if (stdout) console.log('[Deploy]', stdout.trim());
+    if (stderr) console.error('[Deploy]', stderr.trim());
+  } catch (err) {
+    console.error('[Deploy] Failed:', err.message);
+  }
+
   try {
     const guilds = await client.guilds.fetch();
     console.log(`Bot is in ${guilds.size} servers`);
@@ -54,22 +125,96 @@ client.on('clientReady', async () => {
 
   // Auto-pull with safety check
   async function autoPull() {
+    if (!gitAvailable) {
+      return;
+    }
     if (isGitBusy) {
       console.log('[Auto-Pull] Skipped — git in use');
       return;
     }
     isGitBusy = true;
     try {
-      await withTimeout(git.pull('origin', (await git.branch()).current));
-      console.log('[Auto-Pull] Synced with GitHub');
+      const pullResult = await withTimeout(git.pull('origin', (await git.branch()).current));
+      client.health.git.lastPull = Date.now();
+      if (pullResult && pullResult.summary && pullResult.summary.changes > 0) {
+        client.health.git.lastPullResult = `${pullResult.summary.changes} file(s) updated`;
+        console.log(`[Auto-Pull] ${pullResult.summary.changes} file(s) changed — running npm install...`);
+        try {
+          await withTimeout(exec('npm install --no-audit --no-fund', { cwd: path.join(__dirname, '..') }), 120000);
+          console.log('[Auto-Pull] npm install complete');
+          console.log('[Auto-Pull] Restarting to apply update...');
+          process.exit(0);
+        } catch (err) {
+          console.error('[Auto-Pull] npm install failed:', err.message);
+          console.log('[Auto-Pull] Deferred restart — npm install will retry on next cycle');
+        }
+      } else {
+        client.health.git.lastPullResult = 'up to date';
+        console.log('[Auto-Pull] Already up to date');
+      }
     } catch (err) {
+      client.health.git.lastPull = Date.now();
+      client.health.git.lastPullResult = 'error: ' + err.message;
       console.error('[Auto-Pull] Pull failed:', err.message);
+      if (err.git) {
+        console.error('[Auto-Pull] Git error details:', err.git);
+      }
     } finally {
       isGitBusy = false;
     }
   }
   autoPull();
   setInterval(autoPull, 5 * 60 * 1000);
+
+  // Weekly restart to prevent memory leaks
+  const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
+  setTimeout(() => {
+    console.log('[Auto-Pull] Weekly scheduled restart');
+    process.exit(0);
+  }, MS_WEEK);
+
+  async function checkGoogleSheets() {
+    const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+    try {
+      await withTimeout(exec(`gog sheets metadata "${SHEET_ID}" --json`), 30000);
+      client.health.sheets.status = 'ok';
+      client.health.sheets.lastCheck = Date.now();
+      client.health.sheets.lastError = null;
+      console.log('[Health] Google Sheets: OK');
+    } catch (err) {
+      client.health.sheets.status = 'error';
+      client.health.sheets.lastCheck = Date.now();
+      client.health.sheets.lastError = err.message;
+      console.error('[Health] Google Sheets check failed:', err.message);
+    }
+  }
+
+  async function checkDatabase() {
+    try {
+      const db = require('../server/db');
+      await db.init();
+      const data = db.loadData();
+      if (data && data.reviewers) {
+        client.health.db.status = 'ok';
+        client.health.db.lastCheck = Date.now();
+        client.health.db.lastError = null;
+        console.log('[Health] Database: OK');
+      } else {
+        throw new Error('Invalid data structure');
+      }
+    } catch (err) {
+      client.health.db.status = 'error';
+      client.health.db.lastCheck = Date.now();
+      client.health.db.lastError = err.message;
+      console.error('[Health] Database check failed:', err.message);
+    }
+  }
+
+  checkGoogleSheets();
+  checkDatabase();
+  setInterval(checkGoogleSheets, 30 * 60 * 1000);
+  setInterval(checkDatabase, 30 * 60 * 1000);
+  setInterval(() => { client.health.discord.ping = client.ws.ping; }, 60 * 1000);
 });
 
 client.on('interactionCreate', async interaction => {
