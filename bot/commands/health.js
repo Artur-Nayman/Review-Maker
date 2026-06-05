@@ -42,7 +42,7 @@ module.exports = {
         { name: 'Uptime', value: humanUptime(Date.now() - h.startedAt), inline: true },
         { name: 'Discord Ping', value: `${h.discord.ping}ms`, inline: true },
         { name: 'Discord', value: discordStatus, inline: true },
-        { name: 'Google Sheets', value: sheetsStatus, inline: true },
+        { name: 'Google API', value: sheetsStatus, inline: true },
         { name: 'Database (SQLite)', value: dbStatus, inline: true },
         { name: 'Last Git Pull', value: h.git.lastPullResult || 'never', inline: false }
       )

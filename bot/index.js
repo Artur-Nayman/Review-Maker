@@ -174,18 +174,23 @@ client.on('clientReady', async () => {
   }, MS_WEEK);
 
   async function checkGoogleSheets() {
-    const SHEET_ID = 'YOUR_SHEET_ID_HERE';
     try {
-      await withTimeout(exec(`gog sheets metadata "${SHEET_ID}" --json`), 30000);
-      client.health.sheets.status = 'ok';
-      client.health.sheets.lastCheck = Date.now();
-      client.health.sheets.lastError = null;
-      console.log('[Health] Google Sheets: OK');
+      const resp = await fetch('https://sheets.googleapis.com/$discovery/rest?version=v4', {
+        signal: AbortSignal.timeout(10000)
+      });
+      if (resp.ok) {
+        client.health.sheets.status = 'ok';
+        client.health.sheets.lastCheck = Date.now();
+        client.health.sheets.lastError = null;
+        console.log('[Health] Google Sheets API: reachable');
+      } else {
+        throw new Error(`HTTP ${resp.status}`);
+      }
     } catch (err) {
       client.health.sheets.status = 'error';
       client.health.sheets.lastCheck = Date.now();
       client.health.sheets.lastError = err.message;
-      console.error('[Health] Google Sheets check failed:', err.message);
+      console.error('[Health] Google Sheets API unreachable:', err.message);
     }
   }
 
