@@ -111,7 +111,7 @@ async function syncDiscordApprovals(data) {
 
     const [titleRes, branchRes] = await Promise.all([
       sheetsGet('C:C'),
-      sheetsGet('G:G')
+      sheetsGet('F:F')
     ]);
 
     const titles = (titleRes.values || []).map(r => (r[0] || '').trim().toLowerCase());
@@ -145,7 +145,7 @@ async function bulkSyncDiscordApprovals(data) {
   try {
     const [titleRes, branchRes] = await Promise.all([
       sheetsGet('C:C'),
-      sheetsGet('G:G')
+      sheetsGet('F:F')
     ]);
 
     const titles = (titleRes.values || []).map(r => (r[0] || '').trim().toLowerCase());
