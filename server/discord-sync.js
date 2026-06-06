@@ -123,23 +123,18 @@ async function syncDiscordApprovals(data) {
       if (rowIdx < 0) continue;
       const sheetRow = rowIdx + 1;
       const approvals = `${review.approvalCount}/${review.reviewers ? review.reviewers.length : 0}`;
-      const reviewerList = review.reviewers
-        ? review.reviewers.map(r => `${r.name}(${r.status === 'approved' ? '✅' : r.status === 'disapproved' ? '❌' : '⏳'})`).join(', ')
-        : '';
-      updates.push({ row: sheetRow, revId: review.id, approvals, reviewerList });
+      updates.push({ row: sheetRow, revId: review.id, approvals });
     }
 
     if (updates.length === 0) return;
 
     updates.sort((a, b) => a.row - b.row);
     if (updates.length === 1) {
-      await sheetsUpdate(`J${updates[0].row}`, [[updates[0].revId]]);
-      await sheetsUpdate(`K${updates[0].row}`, [[updates[0].approvals]]);
-      await sheetsUpdate(`U${updates[0].row}`, [[updates[0].reviewerList]]);
+      await sheetsUpdate(`I${updates[0].row}`, [[updates[0].revId]]);
+      await sheetsUpdate(`J${updates[0].row}`, [[updates[0].approvals]]);
     } else {
-      await writeColumns(updates, 'J', u => u.revId);
-      await writeColumns(updates, 'K', u => u.approvals);
-      await writeColumns(updates, 'U', u => u.reviewerList);
+      await writeColumns(updates, 'I', u => u.revId);
+      await writeColumns(updates, 'J', u => u.approvals);
     }
   } catch (err) {
     console.error('[DiscordSync] Failed:', err.message);
@@ -162,18 +157,14 @@ async function bulkSyncDiscordApprovals(data) {
       if (rowIdx < 0) continue;
       const sheetRow = rowIdx + 1;
       const approvals = `${review.approvalCount}/${review.reviewers ? review.reviewers.length : 0}`;
-      const reviewerList = review.reviewers
-        ? review.reviewers.map(r => `${r.name}(${r.status === 'approved' ? '✅' : r.status === 'disapproved' ? '❌' : '⏳'})`).join(', ')
-        : '';
-      updates.push({ row: sheetRow, revId: review.id, approvals, reviewerList });
+      updates.push({ row: sheetRow, revId: review.id, approvals });
     }
 
     if (updates.length === 0) return;
 
     updates.sort((a, b) => a.row - b.row);
-    await writeColumns(updates, 'J', u => u.revId);
-    await writeColumns(updates, 'K', u => u.approvals);
-    await writeColumns(updates, 'U', u => u.reviewerList);
+    await writeColumns(updates, 'I', u => u.revId);
+    await writeColumns(updates, 'J', u => u.approvals);
   } catch (err) {
     console.error('[DiscordSync] Bulk failed:', err.message);
   }
