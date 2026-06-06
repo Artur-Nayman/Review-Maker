@@ -819,6 +819,15 @@ async function startServer() {
     console.log('[DiscordSync] Initial sync skipped:', e.message);
   }
 
+  try {
+    const { syncGitLabMRs } = require('./gitlab-sync');
+    syncGitLabMRs();
+    setInterval(() => syncGitLabMRs(), 5 * 60 * 1000);
+    console.log('[GitLabSync] Initial sync complete, polling every 5 min');
+  } catch (e) {
+    console.log('[GitLabSync] Initial sync skipped:', e.message);
+  }
+
   app.listen(PORT, () => {
     console.log(`\nReview Maker running at http://localhost:${PORT}`);
     console.log(`Default admin: Admin / root\n`);
