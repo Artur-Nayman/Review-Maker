@@ -81,6 +81,19 @@ function getStatusEmoji(status) {
   return map[status] || status;
 }
 
+async function writeColumns(updates, col, getValue) {
+  const startRow = updates[0].row;
+  const endRow = updates[updates.length - 1].row;
+  const rows = [];
+  let cursor = startRow;
+  for (const u of updates) {
+    while (cursor < u.row) { rows.push(['']); cursor++; }
+    rows.push([getValue(u)]);
+    cursor++;
+  }
+  await sheetsUpdate(`${col}${startRow}:${col}${endRow}`, rows);
+}
+
 function findSheetRow(reviewBranch, titles, sourceBranches) {
   const branch = (reviewBranch || '').trim().toLowerCase();
   let idx = sourceBranches.findIndex(b => b === branch);
@@ -118,21 +131,15 @@ async function syncDiscordApprovals(data) {
 
     if (updates.length === 0) return;
 
+    updates.sort((a, b) => a.row - b.row);
     if (updates.length === 1) {
       await sheetsUpdate(`J${updates[0].row}`, [[updates[0].revId]]);
       await sheetsUpdate(`K${updates[0].row}`, [[updates[0].approvals]]);
       await sheetsUpdate(`U${updates[0].row}`, [[updates[0].reviewerList]]);
     } else {
-      const startRow = updates[0].row;
-      const endRow = updates[updates.length - 1].row;
-      const fullValues = [];
-      let cursor = startRow;
-      for (const u of updates) {
-        while (cursor < u.row) { fullValues.push(['', '', '']); cursor++; }
-        fullValues.push([u.revId, u.approvals, u.reviewerList]);
-        cursor++;
-      }
-      await sheetsUpdate(`J${startRow}:U${endRow}`, fullValues);
+      await writeColumns(updates, 'J', u => u.revId);
+      await writeColumns(updates, 'K', u => u.approvals);
+      await writeColumns(updates, 'U', u => u.reviewerList);
     }
   } catch (err) {
     console.error('[DiscordSync] Failed:', err.message);
@@ -163,17 +170,10 @@ async function bulkSyncDiscordApprovals(data) {
 
     if (updates.length === 0) return;
 
-    const startRow = updates[0].row;
-    const endRow = updates[updates.length - 1].row;
-    const values = [];
-    let cursor = startRow;
-    for (const u of updates) {
-      while (cursor < u.row) { values.push(['', '', '']); cursor++; }
-      values.push([u.revId, u.approvals, u.reviewerList]);
-      cursor++;
-    }
-
-    await sheetsUpdate(`J${startRow}:U${endRow}`, values);
+    updates.sort((a, b) => a.row - b.row);
+    await writeColumns(updates, 'J', u => u.revId);
+    await writeColumns(updates, 'K', u => u.approvals);
+    await writeColumns(updates, 'U', u => u.reviewerList);
   } catch (err) {
     console.error('[DiscordSync] Bulk failed:', err.message);
   }
