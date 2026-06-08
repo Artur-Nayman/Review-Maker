@@ -8,7 +8,13 @@
     "dev": "node --watch server/index.js",
     "bot": "node bot/index.js",
     "bot:deploy": "node bot/deploy-commands.js",
-    "all": "concurrently \"npm run start\" \"npm run bot\""
+    "all": "concurrently \"npm run start\" \"npm run bot\"",
+    "test": "jest --runInBand --forceExit --detectOpenHandles --testTimeout=15000"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/tests"],
+    "testMatch": ["**/tests/api.test.js"]
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -24,5 +30,9 @@
     "simple-git": "^3.36.0",
     "sql.js": "^1.14.1",
     "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   }
 }

@@ -159,5 +159,28 @@ const API = {
 
   async updateReviewer(name, updates) {
     return this.patch(`/api/reviewers/${name}/reviewer`, updates);
+  },
+
+  // Debug endpoints
+  async debugGetLogs(lines = 100) {
+    return this.get(`/api/debug/logs?lines=${lines}&userRole=${currentUser?.role}`);
+  },
+  async debugGetTables() {
+    return this.get(`/api/debug/db/tables?userRole=${currentUser?.role}`);
+  },
+  async debugGetTable(name) {
+    return this.get(`/api/debug/db/table/${name}?userRole=${currentUser?.role}`);
+  },
+  async debugRunQuery(sql) {
+    return this.post(`/api/debug/db/query`, { sql, userRole: currentUser?.role });
+  },
+  async debugUpdateRow(table, idColumn, idValue, updates) {
+    return this.post(`/api/debug/db/row/${table}`, { idColumn, idValue, updates, userRole: currentUser?.role, userName: currentUser?.name });
+  },
+  async debugGetSheetColumns(tab) {
+    return this.get(`/api/debug/sheets/columns?tab=${encodeURIComponent(tab)}&userRole=${currentUser?.role}`);
+  },
+  async debugGetGitStatus() {
+    return this.get(`/api/debug/git/status?userRole=${currentUser?.role}`);
   }
 };

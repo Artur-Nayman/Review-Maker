@@ -447,6 +447,78 @@ app.post('/api/reviews/:id/comment', (req, res) => {
   res.json(review);
 });
 
+app.post('/api/reviews/:id/needattention', (req, res) => {
+  const { comment, flaggedBy } = req.body;
+  const data = loadData();
+  const review = findReviewById(data, req.params.id);
+
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+  if (review.status !== 'approved') {
+    return res.status(400).json({ error: 'Only approved reviews can be flagged for attention' });
+  }
+
+  review.needAttention = {
+    comment: comment || '',
+    flaggedBy: flaggedBy || 'unknown',
+    createdAt: new Date().toISOString(),
+    resolved: false
+  };
+  review.updatedAt = new Date().toISOString();
+
+  saveData(data, `Review ${req.params.id} flagged for attention by ${flaggedBy}`);
+  res.json(review);
+});
+
+app.get('/api/stats', (req, res) => {
+  const data = loadData();
+  const all = data.reviews;
+  const now = new Date();
+
+  const active = all.filter(r => ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status));
+  const approved = all.filter(r => r.status === 'approved');
+  const fixNeeded = all.filter(r => r.status === 'fix_needed');
+
+  const avgApprovalTime = (() => {
+    const completed = all.filter(r => ['approved', 'rejected'].includes(r.status) && r.createdAt && r.updatedAt);
+    if (completed.length === 0) return null;
+    const totalMs = completed.reduce((sum, r) => sum + (new Date(r.updatedAt) - new Date(r.createdAt)), 0);
+    return Math.round(totalMs / completed.length / 3600000 * 10) / 10;
+  })();
+
+  res.json({
+    totalReviews: all.length,
+    activeReviews: active.length,
+    approvedReviews: approved.length,
+    fixNeeded: fixNeeded.length,
+    flaggedForAttention: all.filter(r => r.needAttention && !r.needAttention.resolved).length,
+    avgApprovalTimeHours: avgApprovalTime,
+    totalReviewers: data.reviewers.length,
+    reviewers: data.reviewers.map(r => ({ name: r.name, role: r.role, load: r.load }))
+  });
+});
+
+app.post('/api/admin/repair-loads', (req, res) => {
+  const data = loadData();
+  const activeStatuses = ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'];
+
+  for (const r of data.reviewers) {
+    r.load = 0;
+  }
+
+  for (const review of data.reviews) {
+    if (!activeStatuses.includes(review.status)) continue;
+    for (const rv of review.reviewers) {
+      if (rv.status === 'pending') {
+        const reviewer = data.reviewers.find(r => r.name.toLowerCase() === rv.name.toLowerCase());
+        if (reviewer) reviewer.load = Math.min(reviewer.load + 1, data.settings.maxLoad || 3);
+      }
+    }
+  }
+
+  saveData(data, 'Reviewer loads repaired');
+  res.json({ message: 'Loads recalculated', reviewers: data.reviewers.map(r => ({ name: r.name, load: r.load })) });
+});
+
 app.get('/api/history', (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
   const offset = parseInt(req.query.offset) || 0;
@@ -545,14 +617,20 @@ app.post('/api/reviews/manual', (req, res) => {
 
 app.post('/api/reviewers', async (req, res) => {
   const { name, speciality, role } = req.body;
-  const data = loadData();
 
+  let data = loadData();
   if (getReviewerByName(data, name)) {
     return res.status(400).json({ error: 'User already exists' });
   }
 
   const finalSpeciality = isNonReviewRole(role || 'reviewer') ? 'None' : (speciality || 'Fullstack');
   const generatedPassword = generatePassword();
+  const hashedPassword = await hashPassword(generatedPassword);
+
+  data = loadData();
+  if (getReviewerByName(data, name)) {
+    return res.status(400).json({ error: 'User already exists (concurrent creation)' });
+  }
 
   data.reviewers.push({
     name,
@@ -560,7 +638,7 @@ app.post('/api/reviewers', async (req, res) => {
     speciality: finalSpeciality,
     role: role || 'reviewer',
     email: '',
-    password: await hashPassword(generatedPassword),
+    password: hashedPassword,
     plainPassword: generatedPassword,
     discordId: ''
   });
@@ -590,15 +668,21 @@ app.post('/api/reviewers/:name/password', passwordLimiter, async (req, res) => {
     return res.status(403).json({ error: 'Only admin can set passwords' });
   }
 
-  const data = loadData();
-  const reviewer = getReviewerByName(data, req.params.name);
-
-  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+  let data = loadData();
+  if (!getReviewerByName(data, req.params.name)) {
+    return res.status(404).json({ error: 'User not found' });
+  }
   if (!password || password.length < 4) {
     return res.status(400).json({ error: 'Password must be at least 4 characters' });
   }
 
-  reviewer.password = await hashPassword(password);
+  const hashedPassword = await hashPassword(password);
+
+  data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+
+  reviewer.password = hashedPassword;
   reviewer.plainPassword = password;
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
@@ -613,13 +697,19 @@ app.post('/api/reviewers/:name/reset-password', passwordLimiter, async (req, res
     return res.status(403).json({ error: 'Only admin can reset passwords' });
   }
 
-  const data = loadData();
-  const reviewer = getReviewerByName(data, req.params.name);
-
-  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+  let data = loadData();
+  if (!getReviewerByName(data, req.params.name)) {
+    return res.status(404).json({ error: 'User not found' });
+  }
 
   const newPassword = generatePassword();
-  reviewer.password = await hashPassword(newPassword);
+  const hashedPassword = await hashPassword(newPassword);
+
+  data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+  if (!reviewer) return res.status(404).json({ error: 'User not found' });
+
+  reviewer.password = hashedPassword;
   reviewer.plainPassword = newPassword;
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
@@ -744,6 +834,28 @@ app.put('/api/settings', (req, res) => {
   res.json(data.settings);
 });
 
+// --- Debug routes ---
+app.use('/api/debug', require('./debug-routes'));
+
+// Update review status (used by dashboard All Reviews tab)
+app.patch('/api/reviews/:id/status', (req, res) => {
+  const { status } = req.body;
+  const data = loadData();
+  const review = findReviewById(data, req.params.id);
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+  if (!['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated', 'approved', 'rejected', 'deleted'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  review.status = status;
+  review.updatedAt = new Date().toISOString();
+  if (status === 'deleted') {
+    review.deletedBy = 'dashboard';
+    review.deletedAt = new Date().toISOString();
+  }
+  saveData(data, `Review ${req.params.id} status set to ${status} via dashboard`);
+  res.json(review);
+});
+
 app.get('/api/health', (req, res) => {
   try {
     const data = loadData();
@@ -805,6 +917,20 @@ app.post('/api/sheets/sync-discord', (req, res) => {
   }
 });
 
+app.post('/api/sheets/bulk-sync', (req, res) => {
+  const { userRole } = req.body;
+  if (userRole !== 'admin' && userRole !== 'manager') {
+    return res.status(403).json({ error: 'Only admin/manager can sync' });
+  }
+  try {
+    const data = loadData();
+    require('./sheets-sync').bulkSyncToSheet(data);
+    res.json({ message: 'Review Queue bulk synced' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 async function startServer() {
   const db = require('./db');
   await db.init();
@@ -835,4 +961,8 @@ async function startServer() {
   });
 }
 
-startServer();
+module.exports = { app, startServer };
+
+if (require.main === module) {
+  startServer();
+}

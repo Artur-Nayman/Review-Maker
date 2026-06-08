@@ -36,6 +36,7 @@
     <button class="tab-btn" data-tab="history">History</button>
     <button class="tab-btn admin-only" data-tab="admin" style="display: none;">Admin</button>
     <button class="tab-btn admin-only" data-tab="data" style="display: none;">Raw Data</button>
+    <button class="tab-btn admin-only" data-tab="debug" style="display: none;">Debug</button>
   </nav>
 
   <main class="app-main">
@@ -257,6 +258,84 @@
         <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
           <button class="btn btn-sm btn-primary" onclick="loadRawData()">Refresh</button>
           <button class="btn btn-sm btn-ghost" onclick="copyRawData()">📋 Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-debug" class="tab-content">
+      <div class="card full-width">
+        <h2>Debug Console</h2>
+
+        <div class="debug-section">
+          <h3>Log Viewer</h3>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+            <label>Lines:</label>
+            <select id="debug-log-lines" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="debugLoadLogs()">Refresh</button>
+            <button class="btn btn-sm btn-ghost" onclick="debugClearLogs()">Clear</button>
+          </div>
+          <pre id="debug-log-view" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:300px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
+        </div>
+
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Database Browser</h3>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+            <label>Table:</label>
+            <select id="debug-table-select" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;" onchange="debugLoadTable()">
+              <option value="">— Select —</option>
+            </select>
+            <span id="debug-table-info" style="font-size:0.75rem;color:var(--text-muted);"></span>
+          </div>
+          <div class="table-wrapper" style="max-height:400px;overflow:auto;">
+            <table id="debug-table-view" style="font-size:0.75rem;">
+              <thead id="debug-table-head"></thead>
+              <tbody id="debug-table-body"></tbody>
+            </table>
+          </div>
+          <div id="debug-table-empty" class="empty-state" style="display:none;"><p>Select a table to browse</p></div>
+        </div>
+
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>SQL Console</h3>
+          <textarea id="debug-sql-input" placeholder="SELECT * FROM reviews LIMIT 10" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.625rem;color:var(--text);font-family:monospace;font-size:0.75rem;min-height:60px;resize:vertical;"></textarea>
+          <div style="margin-top:0.5rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-sm btn-primary" onclick="debugRunQuery()">Run</button>
+            <button class="btn btn-sm btn-ghost" onclick="document.getElementById('debug-sql-result').innerHTML=''">Clear</button>
+          </div>
+          <pre id="debug-sql-result" style="margin-top:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:300px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
+        </div>
+
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Sheets Inspector</h3>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+            <label>Tab:</label>
+            <select id="debug-sheets-tab" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;">
+              <option value="Review Queue">Review Queue</option>
+              <option value="Merge Requests">Merge Requests</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="debugInspectSheets()">Inspect</button>
+          </div>
+          <div id="debug-sheets-result" style="font-size:0.75rem;color:var(--text-muted);">Click "Inspect" to see column mapping</div>
+        </div>
+
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Git Status</h3>
+          <button class="btn btn-sm btn-primary" onclick="debugGitStatus()">Check</button>
+          <pre id="debug-git-result" style="margin-top:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:200px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
+        </div>
+
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Quick Actions</h3>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="debugTriggerSync()">Sync Discord Approvals</button>
+            <button class="btn btn-sm btn-primary" onclick="debugBulkSyncSheets()">Bulk Sync Review Queue</button>
+          </div>
+          <div id="debug-action-result" style="margin-top:0.5rem;"></div>
         </div>
       </div>
     </section>

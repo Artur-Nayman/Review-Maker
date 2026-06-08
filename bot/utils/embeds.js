@@ -70,6 +70,10 @@ function createReviewEmbed(review, showMentions = false) {
     { name: 'Reviewers', value: reviewersText || 'None assigned' }
   ];
 
+  if (review.needAttention && !review.needAttention.resolved) {
+    fields.push({ name: '⚠️ Needs Attention', value: review.needAttention.comment, inline: false });
+  }
+
   if (review.commitRef) {
     fields.splice(1, 0, { name: 'Branch', value: review.branch, inline: true }, { name: 'Commit', value: `\`${review.commitRef}\``, inline: true });
   }

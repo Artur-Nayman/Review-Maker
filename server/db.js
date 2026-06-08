@@ -2,8 +2,8 @@ const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = path.join(__dirname, 'reviewmaker.db');
-const DATA_PATH = path.join(__dirname, 'data.json');
+const DB_PATH = process.env.TEST_DB_PATH || path.join(__dirname, 'reviewmaker.db');
+const DATA_PATH = process.env.TEST_DATA_PATH || path.join(__dirname, 'data.json');
 const NUMERIC_SETTINGS = ['nextReviewNumber', 'maxLoad', 'reviewersPerRequest'];
 
 let db = null;
@@ -97,6 +97,11 @@ async function init() {
   } catch (e) {
     // Column already exists
   }
+  try {
+    db.run("ALTER TABLE reviews ADD COLUMN needAttention TEXT");
+  } catch (e) {
+    // Column already exists
+  }
 
   initialized = true;
   migrateFromJsonIfNeeded();
@@ -158,7 +163,7 @@ function migrateFromJsonIfNeeded() {
       execute('INSERT OR REPLACE INTO reviewers (name, load, speciality, role, email, password, plainPassword, discordId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '', r.plainPassword || '', r.discordId || '']);
     }
     for (const review of data.reviews || []) {
-      execute('INSERT OR REPLACE INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '']);
+      execute('INSERT OR REPLACE INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null]);
       for (const rv of review.reviewers || []) {
         execute('INSERT OR REPLACE INTO review_reviewers (reviewId, name, status, comment, notified, respondedAt) VALUES (?, ?, ?, ?, ?, ?)', [review.id, rv.name, rv.status || 'pending', rv.comment || '', rv.notified ? 1 : 0, rv.respondedAt || null]);
       }
@@ -213,6 +218,11 @@ function loadData() {
     } else {
       review.escalation = null;
     }
+    if (review.needAttention) {
+      try { review.needAttention = JSON.parse(review.needAttention); } catch (e) { review.needAttention = null; }
+    } else {
+      review.needAttention = null;
+    }
     review.approvalCount = review.approvalCount || 0;
   }
 
@@ -245,7 +255,7 @@ function saveData(data, commitMsg) {
     }
 
     for (const review of data.reviews || []) {
-      execute('INSERT INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '']);
+      execute('INSERT INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null]);
 
       for (const rv of review.reviewers || []) {
         execute('INSERT INTO review_reviewers (reviewId, name, status, comment, notified, respondedAt) VALUES (?, ?, ?, ?, ?, ?)', [review.id, rv.name, rv.status || 'pending', rv.comment || '', rv.notified ? 1 : 0, rv.respondedAt || null]);
@@ -283,9 +293,14 @@ function saveData(data, commitMsg) {
 }
 
 function generateReviewId(data) {
-  const num = data.settings.nextReviewNumber || 1;
-  data.settings.nextReviewNumber = num + 1;
-  saveData(data, 'Incremented review counter');
+  ensureInit();
+  const row = queryOne('SELECT value FROM settings WHERE key = ?', ['nextReviewNumber']);
+  const num = row ? (Number(row.value) || 1) : 1;
+  execute('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['nextReviewNumber', String(num + 1)]);
+  persist();
+  if (data && data.settings) {
+    data.settings.nextReviewNumber = num + 1;
+  }
   return `REV-${num}`;
 }
 
@@ -295,5 +310,9 @@ module.exports = {
   saveData,
   logAudit,
   getAuditLog,
-  generateReviewId
+  generateReviewId,
+  queryAll,
+  queryOne,
+  execute,
+  ensureInit
 };

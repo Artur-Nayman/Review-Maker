@@ -6,6 +6,16 @@ const TAB_NAME = 'Review Queue';
 
 let sheetsClient = null;
 
+function columnToLetter(col) {
+  let letter = '';
+  while (col > 0) {
+    col--;
+    letter = String.fromCharCode(65 + (col % 26)) + letter;
+    col = Math.floor(col / 26);
+  }
+  return letter;
+}
+
 function getAuth() {
   if (sheetsClient) return sheetsClient;
 
@@ -46,22 +56,37 @@ function getStatusEmoji(status) {
   return map[status] || status;
 }
 
-function reviewToRow(review) {
-  return [
-    getStatusEmoji(review.status),
-    review.id,
-    review.branch,
-    review.merger,
-    (review.reviewers || []).map(r => r.name).join(', '),
-    `${review.approvalCount}/${review.reviewers ? review.reviewers.length : 0}`,
-    review.reviewers ? String(review.reviewers.length) : '0',
-    review.priority || '',
-    review.reviewType || '',
-    review.createdAt ? new Date(review.createdAt).toLocaleString() : '',
-    review.commits && review.commits.length > 0 ? review.commits.join(', ') : '',
-    review.updatedAt ? new Date(review.updatedAt).toLocaleString() : ''
-  ];
+const CANONICAL_VALUES = {
+  'Status': (r) => getStatusEmoji(r.status),
+  'Review ID': (r) => r.id,
+  'Branch': (r) => r.branch,
+  'Merger': (r) => r.merger,
+  'Reviewers': (r) => (r.reviewers || []).map(rv => rv.name).join(', '),
+  'Approvals': (r) => `${r.approvalCount}/${r.reviewers ? r.reviewers.length : 0}`,
+  'Required': (r) => r.reviewers ? String(r.reviewers.length) : '0',
+  'Priority': (r) => r.priority || '',
+  'Type': (r) => r.reviewType || '',
+  'Created': (r) => r.createdAt ? new Date(r.createdAt).toLocaleString() : '',
+  'Commits': (r) => r.commits && r.commits.length > 0 ? r.commits.join(', ') : '',
+  'Updated': (r) => r.updatedAt ? new Date(r.updatedAt).toLocaleString() : ''
+};
+
+async function getSheetHeaders(sheets, spreadsheetId) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${TAB_NAME}!1:1`
+  });
+  return (res.data.values && res.data.values[0]) || [];
 }
+
+function buildRow(review, sheetHeaders) {
+  return sheetHeaders.map(h => {
+    const fn = CANONICAL_VALUES[h.trim()];
+    return fn ? fn(review) : '';
+  });
+}
+
+const CANONICAL_KEYS = Object.keys(CANONICAL_VALUES);
 
 async function ensureTabExists(sheets, spreadsheetId) {
   try {
@@ -80,16 +105,14 @@ async function ensureTabExists(sheets, spreadsheetId) {
       }
     });
 
-    // Write header row
-    const headers = ['Status', 'Review ID', 'Branch', 'Merger', 'Reviewers', 'Approvals', 'Required', 'Priority', 'Type', 'Created', 'Commits', 'Updated'];
+    const lastCol = columnToLetter(CANONICAL_KEYS.length);
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${TAB_NAME}!A1:L1`,
+      range: `${TAB_NAME}!A1:${lastCol}1`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [headers] }
+      requestBody: { values: [CANONICAL_KEYS] }
     });
 
-    // Style header
     try {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
@@ -129,30 +152,39 @@ async function syncReviewToSheet(data, reviewId) {
     const review = data.reviews.find(r => r.id === reviewId || r.id.endsWith(reviewId));
     if (!review) return;
 
-    // Check if row exists
+    const sheetHeaders = await getSheetHeaders(sheets, SHEET_ID);
+
+    const reviewIdIdx = sheetHeaders.findIndex(h => /review\s*id/i.test(h.trim()));
+    if (reviewIdIdx < 0) {
+      console.error('[Sheets] No "Review ID" column found in sheet headers');
+      return;
+    }
+
+    const reviewIdCol = columnToLetter(reviewIdIdx + 1);
+
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${TAB_NAME}!A:A`
+      range: `${TAB_NAME}!${reviewIdCol}:${reviewIdCol}`
     });
 
     const values = existing.data.values || [];
-    const rowIndex = values.findIndex(row => row[0] === review.id || row[0] === review.id);
+    const rowIndex = values.findIndex(row => (row[0] || '').trim() === review.id);
 
-    const rowData = reviewToRow(review);
+    const rowData = buildRow(review, sheetHeaders);
+    const columnCount = Math.min(sheetHeaders.length, CANONICAL_KEYS.length);
+    const lastCol = columnToLetter(Math.max(columnCount, 1));
 
     if (rowIndex >= 1) {
-      // Update existing row
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: `${TAB_NAME}!A${rowIndex + 1}:L${rowIndex + 1}`,
+        range: `${TAB_NAME}!A${rowIndex + 1}:${lastCol}${rowIndex + 1}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [rowData] }
       });
     } else {
-      // Append new row
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: `${TAB_NAME}!A:L`,
+        range: `${TAB_NAME}!A:${lastCol}`,
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         requestBody: { values: [rowData] }
@@ -170,15 +202,16 @@ async function bulkSyncToSheet(data) {
   try {
     await ensureTabExists(sheets, SHEET_ID);
 
-    // Get all active reviews
     const activeReviews = data.reviews.filter(r =>
       ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status)
     );
 
-    const rows = activeReviews.map(r => reviewToRow(r));
-    const headers = ['Status', 'Review ID', 'Branch', 'Merger', 'Reviewers', 'Approvals', 'Required', 'Priority', 'Type', 'Created', 'Commits', 'Updated'];
+    const sheetHeaders = await getSheetHeaders(sheets, SHEET_ID);
+    const rows = activeReviews.map(r => buildRow(r, sheetHeaders));
 
-    // Clear existing data (after header)
+    const columnCount = Math.min(sheetHeaders.length, CANONICAL_KEYS.length);
+    const lastCol = columnToLetter(Math.max(columnCount, 1));
+
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: `${TAB_NAME}!A:A`
@@ -187,23 +220,14 @@ async function bulkSyncToSheet(data) {
     if (existingRows > 1) {
       await sheets.spreadsheets.values.clear({
         spreadsheetId: SHEET_ID,
-        range: `${TAB_NAME}!A2:L${existingRows}`
+        range: `${TAB_NAME}!A2:${lastCol}${existingRows}`
       });
     }
 
-    // Write header
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${TAB_NAME}!A1:L1`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [headers] }
-    });
-
-    // Write data
     if (rows.length > 0) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
-        range: `${TAB_NAME}!A2:L${1 + rows.length}`,
+        range: `${TAB_NAME}!A2:${lastCol}${1 + rows.length}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: rows }
       });

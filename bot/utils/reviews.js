@@ -233,6 +233,27 @@ function addComment(id, author, text) {
   return review;
 }
 
+function flagNeedAttention(id, comment, flaggedBy) {
+  const data = loadData();
+  const review = findReviewById(data, id);
+
+  if (!review) throw new Error('Review not found');
+  if (review.status !== 'approved') {
+    throw new Error('Only approved reviews can be flagged for attention');
+  }
+
+  review.needAttention = {
+    comment,
+    flaggedBy,
+    createdAt: new Date().toISOString(),
+    resolved: false
+  };
+  review.updatedAt = new Date().toISOString();
+
+  saveData(data, `Review ${id} flagged for attention by ${flaggedBy}: ${comment}`);
+  return review;
+}
+
 function getActiveReviews() {
   const data = loadData();
   return data.reviews.filter(r => ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status));
@@ -268,5 +289,6 @@ module.exports = {
   addComment,
   getActiveReviews,
   getReviewHistory,
-  getReviewById
+  getReviewById,
+  flagNeedAttention
 };

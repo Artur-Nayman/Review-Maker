@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (currentUser.role === 'admin' || currentUser.role === 'manager') {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+    debugLoadTables();
   }
 
   if (currentUser.role === 'admin') {
@@ -51,6 +52,7 @@ function setupTabs() {
       if (btn.dataset.tab === 'history') loadReviews();
       if (btn.dataset.tab === 'data') loadRawData();
       if (btn.dataset.tab === 'admin') loadAdminData();
+      if (btn.dataset.tab === 'debug') debugTabActivated();
     });
   });
 }
@@ -684,6 +686,272 @@ async function openReviewerEdit(name) {
 function closeReviewerModal() {
   document.getElementById('reviewer-modal').style.display = 'none';
   editingReviewerName = null;
+}
+
+// ===== DEBUG TAB =====
+
+function debugTabActivated() {
+  debugLoadLogs();
+}
+
+async function debugLoadLogs() {
+  const lines = parseInt(document.getElementById('debug-log-lines').value) || 100;
+  const view = document.getElementById('debug-log-view');
+  view.textContent = 'Loading...';
+  try {
+    const data = await API.debugGetLogs(lines);
+    view.textContent = data.entries.join('\n') || '(empty log)';
+  } catch (err) {
+    view.textContent = `Error: ${err.message}`;
+  }
+}
+
+function debugClearLogs() {
+  document.getElementById('debug-log-view').textContent = '';
+}
+
+async function debugLoadTables() {
+  const select = document.getElementById('debug-table-select');
+  if (!select) return;
+  try {
+    const tables = await API.debugGetTables();
+    select.innerHTML = '<option value="">— Select —</option>';
+    tables.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.name;
+      opt.textContent = `${t.name} (${t.rowCount} rows)`;
+      opt.dataset.columns = JSON.stringify(t.columns);
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Failed to load tables:', err);
+  }
+}
+
+async function debugLoadTable() {
+  const select = document.getElementById('debug-table-select');
+  const name = select.value;
+  const head = document.getElementById('debug-table-head');
+  const body = document.getElementById('debug-table-body');
+  const empty = document.getElementById('debug-table-empty');
+  const info = document.getElementById('debug-table-info');
+
+  head.innerHTML = '';
+  body.innerHTML = '';
+  if (!name) { empty.style.display = 'block'; info.textContent = ''; return; }
+  empty.style.display = 'none';
+  info.textContent = 'Loading...';
+
+  try {
+    const data = await API.debugGetTable(name);
+    info.textContent = `${data.rows.length} rows`;
+
+    const selectedOpt = select.options[select.selectedIndex];
+    const columns = selectedOpt ? JSON.parse(selectedOpt.dataset.columns) : [];
+    const pkCols = columns.filter(c => c.pk).map(c => c.name);
+    const idCol = pkCols[0] || 'rowid';
+
+    // Header
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<th></th>` + data.columns.map(c => `<th>${c}</th>`).join('') + `<th style="width:60px;"></th>`;
+    head.appendChild(tr);
+
+    // Rows
+    data.rows.forEach((row, idx) => {
+      const rowEl = document.createElement('tr');
+      const rowNum = idx + 1;
+      const rowId = row[idCol];
+      let cells = `<td style="color:var(--text-muted);font-size:0.65rem;">${rowNum}</td>`;
+      let editing = false;
+      data.columns.forEach(col => {
+        const val = row[col] !== null && row[col] !== undefined ? String(row[col]) : '';
+        cells += `<td class="debug-cell" data-table="${name}" data-col="${col}" data-idcol="${idCol}" data-id="${rowId}" data-original="${val.replace(/"/g, '&quot;')}"><span class="debug-val">${escapeHtml(val)}</span></td>`;
+      });
+      cells += `<td><button class="btn btn-sm btn-ghost" style="font-size:0.65rem;padding:0.15rem 0.4rem;" onclick="debugEditRow(this)">✎</button></td>`;
+      rowEl.innerHTML = cells;
+      body.appendChild(rowEl);
+    });
+  } catch (err) {
+    info.textContent = `Error: ${err.message}`;
+  }
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function debugEditRow(btn) {
+  const row = btn.closest('tr');
+  const cells = row.querySelectorAll('.debug-cell');
+  const isEditing = row.classList.contains('editing');
+
+  if (isEditing) {
+    // Save
+    const updates = {};
+    cells.forEach(cell => {
+      const input = cell.querySelector('input');
+      if (input) {
+        const newVal = input.value;
+        const oldVal = cell.dataset.original;
+        if (newVal !== oldVal) {
+          updates[cell.dataset.col] = newVal;
+        }
+        cell.innerHTML = `<span class="debug-val">${escapeHtml(newVal)}</span>`;
+        cell.dataset.original = newVal;
+      }
+    });
+    row.classList.remove('editing');
+    btn.textContent = '✎';
+
+    if (Object.keys(updates).length > 0) {
+      const table = cells[0].dataset.table;
+      const idCol = cells[0].dataset.idcol;
+      const idVal = cells[0].dataset.id;
+      debugSaveRow(table, idCol, idVal, updates);
+    }
+  } else {
+    // Edit mode
+    cells.forEach(cell => {
+      const val = cell.dataset.original;
+      cell.innerHTML = `<input type="text" value="${escapeHtml(val)}" style="width:100%;background:var(--bg-input);border:1px solid var(--accent);border-radius:3px;padding:0.15rem 0.3rem;color:var(--text);font-size:0.7rem;">`;
+    });
+    row.classList.add('editing');
+    btn.textContent = '💾';
+  }
+}
+
+async function debugSaveRow(table, idCol, idVal, updates) {
+  try {
+    const result = await API.debugUpdateRow(table, idCol, idVal, updates);
+    const info = document.getElementById('debug-table-info');
+    if (result.success) {
+      info.textContent = `✅ Updated ${result.updatedFields} field(s) in ${table}`;
+    }
+  } catch (err) {
+    alert(`Failed to save: ${err.message}`);
+  }
+}
+
+async function debugRunQuery() {
+  const input = document.getElementById('debug-sql-input');
+  const result = document.getElementById('debug-sql-result');
+  const sql = input.value.trim();
+  if (!sql) { result.textContent = 'Enter a SQL query'; return; }
+
+  result.textContent = 'Running...';
+  try {
+    const data = await API.debugRunQuery(sql);
+    if (data.count === 0) {
+      result.textContent = '(no results)';
+      return;
+    }
+    // Render as simple table
+    let out = `(${data.count} rows)\n\n`;
+    out += data.columns.join('\t') + '\n';
+    out += data.columns.map(() => '---').join('\t') + '\n';
+    data.rows.forEach(row => {
+      out += data.columns.map(c => row[c] !== null && row[c] !== undefined ? String(row[c]) : '').join('\t') + '\n';
+    });
+    result.textContent = out;
+  } catch (err) {
+    result.textContent = `Error: ${err.message}`;
+  }
+}
+
+async function debugInspectSheets() {
+  const tab = document.getElementById('debug-sheets-tab').value;
+  const result = document.getElementById('debug-sheets-result');
+  result.textContent = 'Inspecting...';
+
+  try {
+    const data = await API.debugGetSheetColumns(tab);
+    if (!data.available) {
+      result.innerHTML = `<span style="color:var(--text-muted);">${data.reason || 'Sheets not configured'}</span>`;
+      return;
+    }
+    if (data.error) {
+      result.innerHTML = `<span style="color:var(--danger);">Error: ${data.error}</span>`;
+      return;
+    }
+    let html = `<div style="font-size:0.75rem;">Tab: <strong>${data.tabName}</strong> — ${data.columns.length} columns</div><div style="display:grid;grid-template-columns:auto auto 1fr;gap:0.25rem 1rem;margin-top:0.5rem;font-size:0.7rem;">`;
+    data.columns.forEach(c => {
+      html += `<span style="color:var(--text-muted);">${c.column}</span>`;
+      html += `<span style="color:var(--text-muted);">#${c.index + 1}</span>`;
+      html += `<span>${c.header}</span>`;
+    });
+    html += '</div>';
+    result.innerHTML = html;
+  } catch (err) {
+    result.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
+  }
+}
+
+async function debugGitStatus() {
+  const result = document.getElementById('debug-git-result');
+  result.textContent = 'Checking...';
+  try {
+    const data = await API.debugGetGitStatus();
+    if (data.error) {
+      result.textContent = `Error: ${data.error}`;
+      return;
+    }
+    let out = `Branch: ${data.branch}\n`;
+    out += `Ahead: ${data.ahead} | Behind: ${data.behind}\n`;
+    if (data.dirty && data.dirty.length > 0) {
+      out += `\nUncommitted changes:\n  ${data.dirty.join('\n  ')}\n`;
+    } else {
+      out += '\nWorking tree: clean\n';
+    }
+    out += '\nRecent commits:\n';
+    data.commits.forEach(c => {
+      out += `  ${c.hash} ${c.message} (${new Date(c.date).toLocaleDateString()})\n`;
+    });
+    result.textContent = out;
+  } catch (err) {
+    result.textContent = `Error: ${err.message}`;
+  }
+}
+
+async function debugTriggerSync() {
+  const result = document.getElementById('debug-action-result');
+  result.innerHTML = '<span class="status-badge pending">Syncing...</span>';
+  try {
+    const res = await fetch('/api/sheets/sync-discord', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userRole: currentUser.role })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      result.innerHTML = '<span class="status-badge approved">✅ Discord sync triggered</span>';
+    } else {
+      result.innerHTML = `<span class="status-badge rejected">${data.error || 'Sync failed'}</span>`;
+    }
+  } catch (err) {
+    result.innerHTML = `<span class="status-badge rejected">Error: ${err.message}</span>`;
+  }
+}
+
+async function debugBulkSyncSheets() {
+  const result = document.getElementById('debug-action-result');
+  result.innerHTML = '<span class="status-badge pending">Syncing...</span>';
+  try {
+    const res = await fetch('/api/sheets/bulk-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userRole: currentUser.role })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      result.innerHTML = '<span class="status-badge approved">✅ Review Queue synced</span>';
+    } else {
+      result.innerHTML = `<span class="status-badge rejected">${data.error || 'Sync failed'}</span>`;
+    }
+  } catch (err) {
+    result.innerHTML = `<span class="status-badge rejected">Error: ${err.message}</span>`;
+  }
 }
 
 async function saveReviewerEdit() {

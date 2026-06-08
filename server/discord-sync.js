@@ -11,6 +11,16 @@ const API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
 let cachedToken = null;
 let tokenExpiry = 0;
 
+function columnToLetter(col) {
+  let letter = '';
+  while (col > 0) {
+    col--;
+    letter = String.fromCharCode(65 + (col % 26)) + letter;
+    col = Math.floor(col / 26);
+  }
+  return letter;
+}
+
 async function getAccessToken() {
   if (cachedToken && Date.now() < tokenExpiry - 60000) return cachedToken;
 
@@ -81,17 +91,27 @@ function getStatusEmoji(status) {
   return map[status] || status;
 }
 
-async function writeColumns(updates, col, getValue) {
-  const startRow = updates[0].row;
-  const endRow = updates[updates.length - 1].row;
-  const rows = [];
-  let cursor = startRow;
-  for (const u of updates) {
-    while (cursor < u.row) { rows.push(['']); cursor++; }
-    rows.push([getValue(u)]);
-    cursor++;
-  }
-  await sheetsUpdate(`${col}${startRow}:${col}${endRow}`, rows);
+async function getSheetHeaders() {
+  const data = await sheetsGet('1:1');
+  return (data.values && data.values[0]) || [];
+}
+
+async function resolveColumns() {
+  const headers = await getSheetHeaders();
+  const cleanHeaders = headers.map(h => h.trim().toLowerCase());
+
+  const titleIdx = cleanHeaders.findIndex(h => h === 'title');
+  const sourceIdx = cleanHeaders.findIndex(h => /source.*branch|branch.*source/.test(h));
+  const revIdIdx = cleanHeaders.findIndex(h => /rev.*id|review.*id/.test(h));
+  const approvalsIdx = cleanHeaders.findIndex(h => /how much approved|approvals?(\s|$)/i.test(h));
+
+  return {
+    headers,
+    titleCol: titleIdx >= 0 ? columnToLetter(titleIdx + 1) : null,
+    sourceCol: sourceIdx >= 0 ? columnToLetter(sourceIdx + 1) : null,
+    revIdCol: revIdIdx >= 0 ? columnToLetter(revIdIdx + 1) : null,
+    approvalsCol: approvalsIdx >= 0 ? columnToLetter(approvalsIdx + 1) : null
+  };
 }
 
 function findSheetRow(reviewBranch, titles, sourceBranches) {
@@ -109,9 +129,15 @@ async function syncDiscordApprovals(data) {
     );
     if (activeReviews.length === 0) return;
 
+    const cols = await resolveColumns();
+    if (!cols.titleCol || !cols.sourceCol) {
+      console.error('[DiscordSync] Required columns (Title, Source Branch) not found in sheet headers');
+      return;
+    }
+
     const [titleRes, branchRes] = await Promise.all([
-      sheetsGet('C:C'),
-      sheetsGet('F:F')
+      sheetsGet(`${cols.titleCol}:${cols.titleCol}`),
+      sheetsGet(`${cols.sourceCol}:${cols.sourceCol}`)
     ]);
 
     const titles = (titleRes.values || []).map(r => (r[0] || '').trim().toLowerCase());
@@ -129,12 +155,21 @@ async function syncDiscordApprovals(data) {
     if (updates.length === 0) return;
 
     updates.sort((a, b) => a.row - b.row);
+
     if (updates.length === 1) {
-      await sheetsUpdate(`I${updates[0].row}`, [[updates[0].revId]]);
-      await sheetsUpdate(`J${updates[0].row}`, [[updates[0].approvals]]);
+      if (cols.revIdCol) {
+        await sheetsUpdate(`${cols.revIdCol}${updates[0].row}`, [[updates[0].revId]]);
+      }
+      if (cols.approvalsCol) {
+        await sheetsUpdate(`${cols.approvalsCol}${updates[0].row}`, [[updates[0].approvals]]);
+      }
     } else {
-      await writeColumns(updates, 'I', u => u.revId);
-      await writeColumns(updates, 'J', u => u.approvals);
+      if (cols.revIdCol) {
+        await writeColumns(updates, cols.revIdCol, u => u.revId);
+      }
+      if (cols.approvalsCol) {
+        await writeColumns(updates, cols.approvalsCol, u => u.approvals);
+      }
     }
   } catch (err) {
     console.error('[DiscordSync] Failed:', err.message);
@@ -143,9 +178,15 @@ async function syncDiscordApprovals(data) {
 
 async function bulkSyncDiscordApprovals(data) {
   try {
+    const cols = await resolveColumns();
+    if (!cols.titleCol || !cols.sourceCol) {
+      console.error('[DiscordSync] Required columns (Title, Source Branch) not found in sheet headers');
+      return;
+    }
+
     const [titleRes, branchRes] = await Promise.all([
-      sheetsGet('C:C'),
-      sheetsGet('F:F')
+      sheetsGet(`${cols.titleCol}:${cols.titleCol}`),
+      sheetsGet(`${cols.sourceCol}:${cols.sourceCol}`)
     ]);
 
     const titles = (titleRes.values || []).map(r => (r[0] || '').trim().toLowerCase());
@@ -163,11 +204,28 @@ async function bulkSyncDiscordApprovals(data) {
     if (updates.length === 0) return;
 
     updates.sort((a, b) => a.row - b.row);
-    await writeColumns(updates, 'I', u => u.revId);
-    await writeColumns(updates, 'J', u => u.approvals);
+    if (cols.revIdCol) {
+      await writeColumns(updates, cols.revIdCol, u => u.revId);
+    }
+    if (cols.approvalsCol) {
+      await writeColumns(updates, cols.approvalsCol, u => u.approvals);
+    }
   } catch (err) {
     console.error('[DiscordSync] Bulk failed:', err.message);
   }
+}
+
+async function writeColumns(updates, col, getValue) {
+  const startRow = updates[0].row;
+  const endRow = updates[updates.length - 1].row;
+  const rows = [];
+  let cursor = startRow;
+  for (const u of updates) {
+    while (cursor < u.row) { rows.push(['']); cursor++; }
+    rows.push([getValue(u)]);
+    cursor++;
+  }
+  await sheetsUpdate(`${col}${startRow}:${col}${endRow}`, rows);
 }
 
 module.exports = { syncDiscordApprovals, bulkSyncDiscordApprovals };

@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { getReviewerByDiscordId, loadData, saveData, determineReviewSize } = require('./utils/data');
+const { getReviewerByDiscordId, loadData, saveData, determineReviewSize, generateReviewId } = require('./utils/data');
 const { approveReview, disapproveReview, getReviewById, incrementReviewerLoads } = require('./utils/reviews');
 const { createReviewEmbed, createErrorEmbed, createSuccessEmbed, getReviewerMention } = require('./utils/embeds');
 
@@ -399,9 +399,7 @@ async function handleManualReview(interaction) {
     return { name, status: 'pending', notified: false };
   });
 
-  const num = data.settings.nextReviewNumber || 1;
-  data.settings.nextReviewNumber = num + 1;
-  const reviewId = `REV-${num}`;
+  const reviewId = generateReviewId(data);
 
   const review = {
     id: reviewId,
