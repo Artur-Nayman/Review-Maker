@@ -157,6 +157,10 @@ const API = {
     return this.patch(`/api/reviews/${id}/status`, { status });
   },
 
+  async editReview(id, updates) {
+    return this.patch(`/api/reviews/${id}/edit`, { userRole: currentUser?.role, userName: currentUser?.name, updates });
+  },
+
   async updateReviewer(name, updates) {
     return this.patch(`/api/reviewers/${name}/reviewer`, updates);
   },

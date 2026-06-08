@@ -572,7 +572,7 @@ async function loadAllReviews() {
         <td style="font-size:0.75rem;color:var(--text-muted)">${new Date(r.createdAt).toLocaleDateString()}</td>
         <td>
           <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${r.id}')">Details</button>
-          ${canEdit && r.status !== 'deleted' ? `<button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
+          ${canEdit && r.status !== 'deleted' ? `<button class="btn btn-sm btn-primary" onclick="openEditReviewModal('${r.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>` : ''}
         </td>`;
       tbody.appendChild(tr);
     });
@@ -585,6 +585,107 @@ async function updateReviewStatus(id, newStatus) {
     loadAllReviews();
     loadReviews();
   } catch (err) { alert(err.message); }
+}
+
+async function openEditReviewModal(id) {
+  const modal = document.getElementById('edit-review-modal');
+  const body = document.getElementById('edit-review-body');
+  modal.style.display = 'flex';
+  body.innerHTML = '<p style="color:var(--text-muted)">Loading...</p>';
+
+  try {
+    const review = await API.getReview(id);
+    body.innerHTML = `
+      <div class="form-group"><label>Branch</label>
+        <input id="edit-branch" value="${escHtml(review.branch)}" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+      <div class="form-group" style="margin-top:0.5rem;"><label>Merger</label>
+        <input id="edit-merger" value="${escHtml(review.merger)}" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+      <div class="form-row" style="margin-top:0.5rem;">
+        <div class="form-group"><label>Type</label>
+          <select id="edit-type" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+            ${['frontend','backend','fullstack'].map(t => `<option value="${t}" ${review.reviewType === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Priority</label>
+          <select id="edit-priority" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+            ${['low','mid','imp'].map(p => `<option value="${p}" ${review.priority === p ? 'selected' : ''}>${p}</option>`).join('')}
+          </select></div>
+      </div>
+      <div class="form-row" style="margin-top:0.5rem;">
+        <div class="form-group"><label>Status</label>
+          <select id="edit-status" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+            ${['pending','in_review','fix_needed','fix_made','escalated','approved','rejected','deleted'].map(s => `<option value="${s}" ${review.status === s ? 'selected' : ''}>${formatStatus(s)}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label>Approvals</label>
+          <input id="edit-approvals" type="number" min="0" max="${review.reviewers.length}" value="${review.approvalCount}" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+      </div>
+      <div class="form-group" style="margin-top:0.5rem;"><label>Commit Ref</label>
+        <input id="edit-commit" value="${escHtml(review.commitRef || '')}" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+      <h4 style="margin-top:1rem;margin-bottom:0.5rem;">Reviewers</h4>
+      <div class="table-wrapper">
+        <table style="font-size:0.75rem;"><thead><tr><th>Name</th><th>Status</th><th>Comment</th></tr></thead>
+          <tbody>${review.reviewers.map((rv, i) => `
+            <tr>
+              <td><strong>${escHtml(rv.name)}</strong></td>
+              <td><select id="edit-rv-status-${i}" style="padding:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+                ${['pending','approved','disapproved'].map(s => `<option value="${s}" ${rv.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select></td>
+              <td><input id="edit-rv-comment-${i}" value="${escHtml(rv.comment || '')}" style="width:100%;padding:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem;display:flex;gap:0.5rem;">
+        <button class="btn btn-primary" onclick="saveEditReview('${id}')">Save Changes</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('edit-review-modal').style.display='none'">Cancel</button>
+      </div>
+      <div id="edit-review-result" class="success-msg" style="display:none;margin-top:0.75rem;"></div>`;
+  } catch (err) {
+    body.innerHTML = `<p style="color:var(--danger)">Error: ${err.message}</p>`;
+  }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+async function saveEditReview(id) {
+  const resultEl = document.getElementById('edit-review-result');
+  const updates = {
+    branch: document.getElementById('edit-branch').value,
+    merger: document.getElementById('edit-merger').value,
+    reviewType: document.getElementById('edit-type').value,
+    priority: document.getElementById('edit-priority').value,
+    status: document.getElementById('edit-status').value,
+    commitRef: document.getElementById('edit-commit').value,
+    approvalCount: parseInt(document.getElementById('edit-approvals').value) || 0,
+    reviewers: []
+  };
+
+  const review = await API.getReview(id);
+  review.reviewers.forEach((rv, i) => {
+    updates.reviewers.push({
+      name: rv.name,
+      status: document.getElementById(`edit-rv-status-${i}`).value,
+      comment: document.getElementById(`edit-rv-comment-${i}`).value
+    });
+  });
+
+  try {
+    await API.editReview(id, updates);
+    resultEl.textContent = 'Review updated successfully!';
+    resultEl.className = 'success-msg';
+    resultEl.style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('edit-review-modal').style.display = 'none';
+      loadAllReviews();
+      loadReviews();
+    }, 800);
+  } catch (err) {
+    resultEl.textContent = err.message;
+    resultEl.className = 'error-msg';
+    resultEl.style.display = 'block';
+  }
 }
 
 async function loadRawData() {

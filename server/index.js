@@ -469,6 +469,41 @@ app.post('/api/reviews/:id/needattention', (req, res) => {
   res.json(review);
 });
 
+app.patch('/api/reviews/:id/edit', (req, res) => {
+  const { userRole, updates } = req.body;
+  if (userRole !== 'admin' && userRole !== 'manager') {
+    return res.status(403).json({ error: 'Only admin/manager can edit reviews' });
+  }
+
+  const data = loadData();
+  const review = findReviewById(data, req.params.id);
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+
+  const allowedFields = ['branch', 'merger', 'reviewType', 'priority', 'status', 'commitRef'];
+  for (const field of allowedFields) {
+    if (updates[field] !== undefined) {
+      review[field] = updates[field];
+    }
+  }
+  if (updates.approvalCount !== undefined) {
+    review.approvalCount = updates.approvalCount;
+  }
+
+  if (Array.isArray(updates.reviewers)) {
+    for (const u of updates.reviewers) {
+      const existing = review.reviewers.find(r => r.name === u.name);
+      if (existing) {
+        if (u.status !== undefined) existing.status = u.status;
+        if (u.comment !== undefined) existing.comment = u.comment;
+      }
+    }
+  }
+
+  review.updatedAt = new Date().toISOString();
+  saveData(data, `Review ${req.params.id} edited by ${req.body.userName || userRole}`);
+  res.json(review);
+});
+
 app.get('/api/stats', (req, res) => {
   const data = loadData();
   const all = data.reviews;

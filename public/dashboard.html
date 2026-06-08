@@ -352,6 +352,17 @@
     </div>
   </div>
 
+  <div id="edit-review-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="this.parentElement.style.display='none'"></div>
+    <div class="modal-content" style="max-width:700px;">
+      <div class="modal-header">
+        <h3 id="edit-modal-title">Edit Review</h3>
+        <button class="modal-close" onclick="document.getElementById('edit-review-modal').style.display='none'">&times;</button>
+      </div>
+      <div id="edit-review-body" style="padding:1.5rem;"></div>
+    </div>
+  </div>
+
   <div id="reviewer-modal" class="modal" style="display: none;">
     <div class="modal-backdrop" onclick="closeReviewerModal()"></div>
     <div class="modal-content" style="max-width:500px;">
