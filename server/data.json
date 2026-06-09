@@ -137,7 +137,7 @@
       "password": ""
     },
     {
-      "name": "Minna",
+      "name": "ScrumMaster",
       "load": 0,
       "speciality": "None",
       "role": "scrum_master",
@@ -148,7 +148,7 @@
   "reviews": [
     {
       "id": "a728a0ad-d8c0-43cb-977b-faa654d76b15",
-      "branch": "blablabla",
+      "branch": "example-feature-branch",
       "merger": "Reviewer03",
       "reviewers": [
         {
@@ -180,6 +180,6 @@
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
-    "adminPassword": "root"
+    "adminPassword": "changeme"
   }
 }
