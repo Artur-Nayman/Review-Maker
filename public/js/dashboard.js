@@ -501,10 +501,8 @@ async function loadPasswords() {
     tbody.innerHTML = '';
     passwords.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
       const tr = document.createElement('tr');
-      const discordCell = r.discordId
-        ? `<span style="color: var(--success); font-size: 0.75rem;">✅ Linked</span> <button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>`
-        : `<span style="color: var(--text-muted); font-size: 0.75rem;">Not linked</span> <button class="btn btn-sm btn-primary" onclick="promptLinkDiscord('${r.name}')">Link</button>`;
-      tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><code>${r.plainPassword || 'Not set'}</code></td><td>${discordCell}</td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
+      const status = r.hasPassword ? '✅ Set' : '❌ Not set';
+      tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td>${status}</td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
       tbody.appendChild(tr);
     });
   } catch (err) { console.error('Failed to load passwords:', err); }

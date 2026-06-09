@@ -81,7 +81,7 @@ npm run all
 ```
 
 Web dashboard: http://localhost:3000
-Default admin: `Admin` / `root`
+Default admin: `Admin` / `changeme`
 
 ---
 
@@ -202,9 +202,7 @@ Weekly counts auto-reset on Monday 00:00.
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$...",
-      "plainPassword": "abc123",
-      "discordId": ""
+      "password": "$2b$..."
     }
   ],
   "reviews": [

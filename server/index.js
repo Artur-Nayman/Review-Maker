@@ -63,14 +63,7 @@ async function migratePasswords(data) {
   for (const reviewer of data.reviewers) {
     reviewer.discordId = reviewer.discordId || '';
     if (reviewer.password && !isPasswordHashed(reviewer.password)) {
-      reviewer.plainPassword = reviewer.password;
       reviewer.password = await hashPassword(reviewer.password);
-      changed = true;
-    }
-    if (!reviewer.plainPassword && reviewer.password) {
-      const generated = generatePassword();
-      reviewer.plainPassword = generated;
-      reviewer.password = await hashPassword(generated);
       changed = true;
     }
   }
@@ -673,9 +666,7 @@ app.post('/api/reviewers', async (req, res) => {
     speciality: finalSpeciality,
     role: role || 'reviewer',
     email: '',
-    password: hashedPassword,
-    plainPassword: generatedPassword,
-    discordId: ''
+    password: hashedPassword
   });
 
   saveData(data, `User ${name} added`);
@@ -718,7 +709,6 @@ app.post('/api/reviewers/:name/password', passwordLimiter, async (req, res) => {
   if (!reviewer) return res.status(404).json({ error: 'User not found' });
 
   reviewer.password = hashedPassword;
-  reviewer.plainPassword = password;
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
   saveData(data, `Password set for ${req.params.name}`);
@@ -745,7 +735,6 @@ app.post('/api/reviewers/:name/reset-password', passwordLimiter, async (req, res
   if (!reviewer) return res.status(404).json({ error: 'User not found' });
 
   reviewer.password = hashedPassword;
-  reviewer.plainPassword = newPassword;
   reviewer.passwordResetToken = null;
   reviewer.passwordResetExpiry = null;
   saveData(data, `Password reset for ${req.params.name}`);
@@ -764,8 +753,7 @@ app.get('/api/admin/passwords', (req, res) => {
   res.json(data.reviewers.map(r => ({
     name: r.name,
     role: r.role,
-    plainPassword: r.plainPassword || '',
-    discordId: r.discordId || ''
+    hasPassword: !!r.password
   })));
 });
 

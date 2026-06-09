@@ -32,9 +32,7 @@ async function init() {
       speciality TEXT DEFAULT 'Fullstack',
       role TEXT DEFAULT 'reviewer',
       email TEXT DEFAULT '',
-      password TEXT DEFAULT '',
-      plainPassword TEXT DEFAULT '',
-      discordId TEXT DEFAULT ''
+      password TEXT DEFAULT ''
     )
   `);
   db.run(`
@@ -160,7 +158,7 @@ function migrateFromJsonIfNeeded() {
   db.run('BEGIN');
   try {
     for (const r of data.reviewers || []) {
-      execute('INSERT OR REPLACE INTO reviewers (name, load, speciality, role, email, password, plainPassword, discordId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '', r.plainPassword || '', r.discordId || '']);
+      execute('INSERT OR REPLACE INTO reviewers (name, load, speciality, role, email, password) VALUES (?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '']);
     }
     for (const review of data.reviews || []) {
       execute('INSERT OR REPLACE INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null]);
@@ -251,7 +249,7 @@ function saveData(data, commitMsg) {
     execute('DELETE FROM settings');
 
     for (const r of data.reviewers || []) {
-      execute('INSERT INTO reviewers (name, load, speciality, role, email, password, plainPassword, discordId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '', r.plainPassword || '', r.discordId || '']);
+      execute('INSERT INTO reviewers (name, load, speciality, role, email, password) VALUES (?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '']);
     }
 
     for (const review of data.reviews || []) {

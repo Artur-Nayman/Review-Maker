@@ -806,8 +806,7 @@
       pwBody.innerHTML = '';
       data.reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
         const tr = document.createElement('tr');
-        const discordCell = r.discordId ? `<span style="color: #10b981; font-size: 0.75rem;">Linked</span> <button class="btn btn-sm btn-warning" onclick="unlinkDiscord('${r.name}')">Unlink</button>` : '<span style="color: #64748b; font-size: 0.75rem;">Not linked</span>';
-        tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><code>${r.plainPassword || 'Not set'}</code></td><td>${discordCell}</td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
+        tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
         pwBody.appendChild(tr);
       });
     }
@@ -850,7 +849,6 @@
       if (!name || !password) { resultEl.textContent = 'Select a user and enter a password'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
       const reviewer = data.reviewers.find(r => r.name === name);
       if (!reviewer) return;
-      reviewer.plainPassword = password;
       reviewer.password = '$2b$hashed';
       await saveData(`Password set for ${name}`);
       resultEl.textContent = `Password set for ${name}`;
@@ -868,7 +866,6 @@
       let pw = ''; for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
       const reviewer = data.reviewers.find(r => r.name === name);
       if (!reviewer) return;
-      reviewer.plainPassword = pw;
       reviewer.password = '$2b$hashed';
       await saveData(`Password reset for ${name}`);
       resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: #0f172a; padding: 0.25rem 0.5rem; border-radius: 4px;">${pw}</code>`;
@@ -883,7 +880,6 @@
       let pw = ''; for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
       const reviewer = data.reviewers.find(r => r.name === name);
       if (!reviewer) return;
-      reviewer.plainPassword = pw;
       reviewer.password = '$2b$hashed';
       await saveData(`Password reset for ${name}`);
       resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: #0f172a; padding: 0.25rem 0.5rem; border-radius: 4px;">${pw}</code>`;

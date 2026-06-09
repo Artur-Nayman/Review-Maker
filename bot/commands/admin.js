@@ -1,17 +1,12 @@
 const { SlashCommandBuilder } = require('discord.js');
 const bcrypt = require('bcryptjs');
 const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity, findReviewById } = require('../utils/data');
-const { createPasswordsEmbed, createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
+const { createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('admin')
     .setDescription('Admin commands (admin only)')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('passwords')
-        .setDescription('View all user passwords')
-    )
     .addSubcommand(subcommand =>
       subcommand
         .setName('reset-password')
@@ -124,16 +119,6 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     switch (subcommand) {
-      case 'passwords': {
-        const passwords = data.reviewers.map(r => ({
-          name: r.name,
-          role: r.role,
-          plainPassword: r.plainPassword || 'Not set'
-        }));
-        const embed = createPasswordsEmbed(passwords);
-        return interaction.reply({ embeds: [embed], ephemeral: true });
-      }
-
       case 'reset-password': {
         const name = interaction.options.getString('user');
         const reviewer = getReviewerByName(data, name);
@@ -144,7 +129,6 @@ module.exports = {
 
         const newPassword = generatePassword();
         reviewer.password = await bcrypt.hash(newPassword, 10);
-        reviewer.plainPassword = newPassword;
         saveData(data, "Bot admin action");
 
         return interaction.reply({
@@ -167,7 +151,6 @@ module.exports = {
         }
 
         reviewer.password = await bcrypt.hash(password, 10);
-        reviewer.plainPassword = password;
         saveData(data, "Bot admin action");
 
         return interaction.reply({
@@ -201,7 +184,6 @@ module.exports = {
           role,
           email: '',
           password: await bcrypt.hash(generatedPassword, 10),
-          plainPassword: generatedPassword,
           discordId: ''
         });
 

@@ -6,9 +6,7 @@
       "speciality": "None",
       "role": "admin",
       "email": "",
-      "password": "$2b$10$eb1g8rd1FHE87M0P9R7.WODcX0D6PkdYK9iT5xrRyl7TaL0w0HOmy",
-      "plainPassword": "root",
-      "discordId": "000000000000000001"
+      "password": "$2b$10$eb1g8rd1FHE87M0P9R7.WODcX0D6PkdYK9iT5xrRyl7TaL0w0HOmy"
     },
     {
       "name": "Reviewer01",
@@ -16,9 +14,7 @@
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$x7R8TIRnqiBPkhgv9XKXUOsNtkKd515euVkU/3umVNrj8uCl8OgfK",
-      "plainPassword": "F69HKaUPzLHC",
-      "discordId": "000000000000000002"
+      "password": "$2b$10$x7R8TIRnqiBPkhgv9XKXUOsNtkKd515euVkU/3umVNrj8uCl8OgfK"
     },
     {
       "name": "Reviewer02",
@@ -26,9 +22,7 @@
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$q72ZyM5jY.j629Wu0n53ReoChUTHwwE5BlKOFh06nuyfrmj8Gxe8S",
-      "plainPassword": "cWzcVDpgkPFq",
-      "discordId": "000000000000000003"
+      "password": "$2b$10$q72ZyM5jY.j629Wu0n53ReoChUTHwwE5BlKOFh06nuyfrmj8Gxe8S"
     },
     {
       "name": "Reviewer03",
@@ -36,9 +30,7 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$kV1F3qMWBQ.ojYwfoUALRe/fyQ3jfYeJZajNsjHHpFITy6E7by3y2",
-      "plainPassword": "pTP3cqJFyL22",
-      "discordId": "000000000000000004"
+      "password": "$2b$10$kV1F3qMWBQ.ojYwfoUALRe/fyQ3jfYeJZajNsjHHpFITy6E7by3y2"
     },
     {
       "name": "Reviewer04",
@@ -46,9 +38,7 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$2yRVBEtLRSyr2Kajs6U5nOWLY/Zwbci3ji9xNotzNCwU1cgoqXg1C",
-      "plainPassword": "vRZvJE5D8Cxa",
-      "discordId": "000000000000000005"
+      "password": "$2b$10$2yRVBEtLRSyr2Kajs6U5nOWLY/Zwbci3ji9xNotzNCwU1cgoqXg1C"
     },
     {
       "name": "Reviewer05",
@@ -56,9 +46,7 @@
       "speciality": "Fullstack",
       "role": "senior",
       "email": "",
-      "password": "$2b$10$tzGeuxkZUziNU5k.n0a08uGA6pAzavnb4422IdOODtNd/XXOfZ1CG",
-      "plainPassword": "ZCmJ3uVveJkA",
-      "discordId": "000000000000000006"
+      "password": "$2b$10$tzGeuxkZUziNU5k.n0a08uGA6pAzavnb4422IdOODtNd/XXOfZ1CG"
     },
     {
       "name": "Reviewer06",
@@ -66,9 +54,7 @@
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$XAVazdPnyEMwXz5EKQ/r5eTCP0t8akSrEt6EHcLfecLOHO0u7UKu2",
-      "plainPassword": "DS4NhhaUUZvJ",
-      "discordId": "000000000000000007"
+      "password": "$2b$10$XAVazdPnyEMwXz5EKQ/r5eTCP0t8akSrEt6EHcLfecLOHO0u7UKu2"
     },
     {
       "name": "Reviewer07",
@@ -76,9 +62,7 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$HGlFJOnUdX176QLlHi1gsuRjr25u9PeEsc.xAlc0FTc.X55RfDz9S",
-      "plainPassword": "gEN4MKxbxsXF",
-      "discordId": "000000000000000008"
+      "password": "$2b$10$HGlFJOnUdX176QLlHi1gsuRjr25u9PeEsc.xAlc0FTc.X55RfDz9S"
     },
     {
       "name": "Reviewer08",
@@ -86,9 +70,7 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$jeqmaJH1NBJayGaT5CV7auRZTymP1cbjHrqa/P1GVLy.id7HRpE6i",
-      "plainPassword": "mPmhXQ4eQS59",
-      "discordId": "000000000000000009"
+      "password": "$2b$10$jeqmaJH1NBJayGaT5CV7auRZTymP1cbjHrqa/P1GVLy.id7HRpE6i"
     },
     {
       "name": "Reviewer09",
@@ -96,9 +78,7 @@
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$m6rYelyYF9MD6E9bd1Pl3.2eBAMbqrRGj6gyN9CpBofxJhJJJ.jky",
-      "plainPassword": "8uNS6aHGhAAy",
-      "discordId": "000000000000000010"
+      "password": "$2b$10$m6rYelyYF9MD6E9bd1Pl3.2eBAMbqrRGj6gyN9CpBofxJhJJJ.jky"
     },
     {
       "name": "Reviewer10",
@@ -106,9 +86,7 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$yPdK8adqMqriPzvFsRk2PuposNwF.p5DGiYeq1uwJNi66RZnbK3o6",
-      "plainPassword": "ULb9GV2b2KrR",
-      "discordId": "000000000000000011"
+      "password": "$2b$10$yPdK8adqMqriPzvFsRk2PuposNwF.p5DGiYeq1uwJNi66RZnbK3o6"
     },
     {
       "name": "Reviewer11",
@@ -116,9 +94,7 @@
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$Lh5Pu1bGgEZ7jFTm6OoBdOjxR0k3llsehJf5d.tV1/0b8RW6QycOC",
-      "plainPassword": "wRGXT9b69cXz",
-      "discordId": "000000000000000012"
+      "password": "$2b$10$Lh5Pu1bGgEZ7jFTm6OoBdOjxR0k3llsehJf5d.tV1/0b8RW6QycOC"
     },
     {
       "name": "Reviewer12",
@@ -126,9 +102,7 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$BVO3gH08rtqjUBH/XdeAdO3Z/vrVDjnq71T/Ar5SnCgWgXQH6ERj.",
-      "plainPassword": "6V86Uex4yUPv",
-      "discordId": "000000000000000013"
+      "password": "$2b$10$BVO3gH08rtqjUBH/XdeAdO3Z/vrVDjnq71T/Ar5SnCgWgXQH6ERj."
     },
     {
       "name": "Reviewer13",
@@ -136,9 +110,7 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$Q53HT1HYH4uJrLKxU2g.9ONX0IeCXLK1g5.2eCdkrfPHfs864K7Z.",
-      "plainPassword": "uXNnMKKN2aq6",
-      "discordId": "000000000000000014"
+      "password": "$2b$10$Q53HT1HYH4uJrLKxU2g.9ONX0IeCXLK1g5.2eCdkrfPHfs864K7Z."
     },
     {
       "name": "Reviewer14",
@@ -146,9 +118,7 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$.DlJm/eg9sS4siFmkGLhyu9NHPIcdfecX7/Bs8VbOFIrtwI/AdjbO",
-      "plainPassword": "Bsu7eKkx5pf5",
-      "discordId": ""
+      "password": "$2b$10$.DlJm/eg9sS4siFmkGLhyu9NHPIcdfecX7/Bs8VbOFIrtwI/AdjbO"
     },
     {
       "name": "Reviewer15",
@@ -156,9 +126,7 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$nzj67Af46NsFqPijaRe1g.jFDyD9dWUfr0RLx32Okh3YkXSKbTmCy",
-      "plainPassword": "efyT5D55fKLG",
-      "discordId": ""
+      "password": "$2b$10$nzj67Af46NsFqPijaRe1g.jFDyD9dWUfr0RLx32Okh3YkXSKbTmCy"
     },
     {
       "name": "Reviewer16",
@@ -166,9 +134,7 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6",
-      "plainPassword": "q96TCQzVjFju",
-      "discordId": "000000000000000015"
+      "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6"
     },
     {
       "name": "Minna",
@@ -176,9 +142,7 @@
       "speciality": "None",
       "role": "admin",
       "email": "",
-      "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa",
-      "plainPassword": "pK4QreMDKTLf",
-      "discordId": "000000000000000016"
+      "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa"
     },
     {
       "name": "Reviewer17",
@@ -186,9 +150,7 @@
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": "$2b$10$UeDMwqr3j/NPj2VBud7pxeMP7Ac92iL803.s8/OnBei/sMuJBYT0.",
-      "plainPassword": "hYHxeQNcqbED",
-      "discordId": "000000000000000017"
+      "password": "$2b$10$UeDMwqr3j/NPj2VBud7pxeMP7Ac92iL803.s8/OnBei/sMuJBYT0."
     }
   ],
   "reviews": [
@@ -700,7 +662,7 @@
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
-    "adminPassword": "root",
+    "adminPassword": "changeme",
     "nextReviewNumber": 28
   }
 }

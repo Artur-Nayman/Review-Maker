@@ -150,21 +150,6 @@ function createHistoryEmbed(reviews) {
   return embed;
 }
 
-function createPasswordsEmbed(passwords) {
-  const embed = new EmbedBuilder()
-    .setTitle('User Passwords')
-    .setColor(0xF59E0B)
-    .setDescription('⚠️ This information is sensitive. Do not share.');
-
-  let description = '';
-  passwords.forEach(p => {
-    description += `**${p.name}** (${p.role})\nPassword: \`${p.plainPassword}\`\n\n`;
-  });
-
-  embed.setDescription(description);
-  return embed;
-}
-
 function createErrorEmbed(message) {
   return new EmbedBuilder()
     .setTitle('Error')
@@ -211,7 +196,6 @@ module.exports = {
   createReviewersEmbed,
   createActiveReviewsEmbed,
   createHistoryEmbed,
-  createPasswordsEmbed,
   createErrorEmbed,
   createSuccessEmbed,
   createAuditLogEmbed
