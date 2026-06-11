@@ -22,10 +22,11 @@ function shuffleSameLoad(sorted) {
 }
 
 function selectReviewers(data, reviewType, count, excludeName) {
-  const maxLoad = data.settings.maxLoad || 3;
+  const globalMaxLoad = data.settings.maxLoad || 3;
   const available = data.reviewers.filter(r =>
     isReviewableRole(r.role) &&
-    r.load < maxLoad &&
+    !r.disabled &&
+    (r.maxLoad > 0 ? r.load < r.maxLoad : r.load < globalMaxLoad) &&
     r.name.toLowerCase() !== excludeName?.toLowerCase()
   );
 

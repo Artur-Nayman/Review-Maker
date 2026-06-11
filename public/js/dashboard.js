@@ -1059,13 +1059,12 @@ async function saveReviewerEdit() {
   if (!name) { resultEl.textContent = 'Name is required'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
   try {
     await API.updateReviewer(editingReviewerName, {
-      name,
       role: document.getElementById('reviewer-edit-role').value,
       speciality: document.getElementById('reviewer-edit-speciality').value,
       load: parseInt(document.getElementById('reviewer-edit-load').value) || 0,
-      maxLoad: parseInt(document.getElementById('reviewer-edit-maxload').value) || 3,
+      maxLoad: parseInt(document.getElementById('reviewer-edit-maxload').value) || 0,
       weeklyCount: parseInt(document.getElementById('reviewer-edit-weekly').value) || 0,
-      maxActiveReviews: parseInt(document.getElementById('reviewer-edit-maxweekly').value) || 5
+      maxActiveReviews: parseInt(document.getElementById('reviewer-edit-maxweekly').value) || 0
     });
     resultEl.textContent = `Saved changes to ${editingReviewerName}`;
     resultEl.className = 'success-msg';

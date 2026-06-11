@@ -118,10 +118,11 @@ function shuffleSameLoad(sorted) {
 }
 
 function selectReviewers(data, reviewType, count, excludeName) {
-  const maxLoad = data.settings.maxLoad || 3;
+  const globalMaxLoad = data.settings.maxLoad || 3;
   const available = data.reviewers.filter(r =>
     isReviewableRole(r.role) &&
-    r.load < maxLoad &&
+    !r.disabled &&
+    (r.maxLoad > 0 ? r.load < r.maxLoad : r.load < globalMaxLoad) &&
     r.name.toLowerCase() !== excludeName?.toLowerCase()
   );
 
@@ -712,7 +713,11 @@ app.post('/api/reviewers', async (req, res) => {
     speciality: finalSpeciality,
     role: role || 'reviewer',
     email: '',
-    password: hashedPassword
+    password: hashedPassword,
+    disabled: false,
+    maxLoad: 0,
+    weeklyCount: 0,
+    maxActiveReviews: 0
   });
 
   saveData(data, `User ${name} added`);
@@ -731,6 +736,49 @@ app.delete('/api/reviewers/:name', (req, res) => {
   data.reviewers.splice(idx, 1);
   saveData(data, `User ${req.params.name} removed`);
   res.json(data.reviewers);
+});
+
+app.patch('/api/reviewers/:name/reviewer', (req, res) => {
+  const data = loadData();
+  const reviewer = getReviewerByName(data, req.params.name);
+
+  if (!reviewer) return res.status(404).json({ error: 'Reviewer not found' });
+
+  const allowedFields = ['role', 'speciality', 'load', 'maxLoad', 'weeklyCount', 'maxActiveReviews', 'disabled', 'email'];
+  const updates = {};
+
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  }
+
+  if (updates.role !== undefined) {
+    if (!['reviewer', 'senior', 'scrum_master', 'manager', 'admin'].includes(updates.role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (updates.role === 'senior') {
+      const currentSenior = getSeniorReviewer(data);
+      if (currentSenior && currentSenior.name !== reviewer.name) {
+        currentSenior.role = 'reviewer';
+      }
+    }
+    if (isNonReviewRole(updates.role)) {
+      updates.speciality = 'None';
+    }
+    reviewer.role = updates.role;
+  }
+
+  if (updates.speciality !== undefined) reviewer.speciality = updates.speciality;
+  if (updates.load !== undefined) reviewer.load = Math.max(0, Number(updates.load) || 0);
+  if (updates.maxLoad !== undefined) reviewer.maxLoad = Math.max(0, Number(updates.maxLoad) || 0);
+  if (updates.weeklyCount !== undefined) reviewer.weeklyCount = Math.max(0, Number(updates.weeklyCount) || 0);
+  if (updates.maxActiveReviews !== undefined) reviewer.maxActiveReviews = Math.max(0, Number(updates.maxActiveReviews) || 0);
+  if (updates.disabled !== undefined) reviewer.disabled = !!updates.disabled;
+  if (updates.email !== undefined) reviewer.email = updates.email;
+
+  saveData(data, `Reviewer ${req.params.name} updated: ${Object.keys(updates).join(', ')}`);
+  res.json(reviewer);
 });
 
 app.post('/api/reviewers/:name/password', passwordLimiter, async (req, res) => {
