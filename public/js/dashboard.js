@@ -120,7 +120,7 @@ async function loadReviewers() {
 
     reviewers.forEach(r => {
       const maxLoad = 3;
-      const isReviewable = r.role === 'reviewer' || r.role === 'senior';
+      const isReviewable = r.role === 'reviewer' || r.role === 'senior' || r.role === 'admin';
       const dots = isReviewable ? Array.from({ length: maxLoad }, (_, i) => {
         let cls = 'load-dot';
         if (i < r.load) { cls += ' filled'; if (r.load >= maxLoad) cls += ' full'; else if (r.load >= maxLoad - 1) cls += ' warn'; }
