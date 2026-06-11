@@ -30,6 +30,22 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
   try {
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
+    // Clean up stale global commands (if deploying to guild)
+    if (GUILD_ID) {
+      try {
+        const globalCommands = await rest.get(Routes.applicationCommands(CLIENT_ID));
+        if (globalCommands.length > 0) {
+          console.log(`Deleting ${globalCommands.length} stale global command(s)...`);
+          for (const cmd of globalCommands) {
+            await rest.delete(Routes.applicationCommand(CLIENT_ID, cmd.id));
+          }
+          console.log('Global commands cleaned up.');
+        }
+      } catch (err) {
+        console.error('Warning: Could not clean global commands:', err.message);
+      }
+    }
+
     let data;
     if (GUILD_ID) {
       console.log(`Deploying to guild ${GUILD_ID} (instant)...`);
