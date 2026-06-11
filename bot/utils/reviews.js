@@ -1,5 +1,26 @@
 const { loadData, saveData, getReviewerByName, isReviewableRole, generateReviewId, findReviewById } = require('./data');
 
+// Shuffle reviewers within same-load groups to prevent selection bias
+function shuffleSameLoad(sorted) {
+  const groups = {};
+  for (const r of sorted) {
+    const load = r.load;
+    if (!groups[load]) groups[load] = [];
+    groups[load].push(r);
+  }
+  const result = [];
+  for (const load of Object.keys(groups).sort((a, b) => a - b)) {
+    const group = groups[load];
+    // Fisher-Yates shuffle
+    for (let i = group.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [group[i], group[j]] = [group[j], group[i]];
+    }
+    result.push(...group);
+  }
+  return result;
+}
+
 function selectReviewers(data, reviewType, count, excludeName) {
   const maxLoad = data.settings.maxLoad || 3;
   const available = data.reviewers.filter(r =>
@@ -20,8 +41,10 @@ function selectReviewers(data, reviewType, count, excludeName) {
   matchingSpecialty.sort((a, b) => a.load - b.load);
   others.sort((a, b) => a.load - b.load);
 
+  const shuffled = [...shuffleSameLoad(matchingSpecialty), ...shuffleSameLoad(others)];
+
   const selected = [];
-  for (const r of [...matchingSpecialty, ...others]) {
+  for (const r of shuffled) {
     if (selected.length >= count) break;
     selected.push({ name: r.name, status: 'pending', notified: false });
   }
