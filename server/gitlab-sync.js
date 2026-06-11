@@ -1,9 +1,19 @@
 require('dotenv').config();
 
-const GITLAB_TOKEN = process.env.GITLAB_TOKEN;
-const PROJECT = 'your-project-path';
-const GITLAB_API = 'https://your-gitlab-instance.com/api/v4';
-const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+const { loadData, saveData, queryOne } = require('./db');
+
+function getGitLabConfig() {
+  const gitlabUrl = queryOne("SELECT value FROM settings WHERE key = 'gitlabUrl'");
+  const gitlabToken = queryOne("SELECT value FROM settings WHERE key = 'gitlabToken'");
+  const gitlabProject = queryOne("SELECT value FROM settings WHERE key = 'gitlabProject'");
+  return {
+    url: gitlabUrl?.value || '',
+    token: gitlabToken?.value || '',
+    project: gitlabProject?.value || ''
+  };
+}
+
+const SHEET_ID = process.env.SHEET_ID || 'YOUR_SHEET_ID_HERE';
 const TAB = 'Merge Requests';
 
 async function getAccessToken() {
@@ -69,9 +79,9 @@ async function sheetsUpdate(token, range, values) {
   return res.json();
 }
 
-async function fetchGitLabMRs() {
-  if (!GITLAB_TOKEN || GITLAB_API.includes('your-gitlab-instance') || PROJECT === 'your-project-path') {
-    console.log('[GitLabSync] GitLab not configured — skipping (set GITLAB_API and PROJECT in config)');
+async function fetchGitLabMRs(state = 'opened') {
+  const config = getGitLabConfig();
+  if (!config.token || !config.url || !config.project || config.url.includes('your-gitlab-instance')) {
     return [];
   }
 
@@ -79,12 +89,12 @@ async function fetchGitLabMRs() {
   let page = 1;
   while (true) {
     const res = await fetch(
-      `${GITLAB_API}/projects/${PROJECT}/merge_requests?state=opened&per_page=100&page=${page}`,
-      { headers: { 'PRIVATE-TOKEN': GITLAB_TOKEN } }
+      `${config.url}/api/v4/projects/${encodeURIComponent(config.project)}/merge_requests?state=${state}&per_page=100&page=${page}`,
+      { headers: { 'PRIVATE-TOKEN': config.token } }
     );
     if (!res.ok) {
       if (res.status === 401) {
-        console.error('[GitLabSync] Token rejected (401) — check GITLAB_TOKEN');
+        console.error('[GitLabSync] Token rejected (401) — check gitlabToken in settings');
         return [];
       }
       throw new Error(`GitLab API error (${res.status}): ${await res.text()}`);
@@ -126,36 +136,86 @@ function mrToRow(mr, number) {
 async function syncGitLabMRs({ silent } = {}) {
   const log = silent ? () => {} : (msg) => console.log('[GitLabSync]', msg);
 
-  const mrs = await fetchGitLabMRs();
+  const config = getGitLabConfig();
+  if (!config.token || !config.url || !config.project || config.url.includes('your-gitlab-instance')) {
+    log('GitLab not configured — skipping');
+    return;
+  }
+
+  const mrs = await fetchGitLabMRs('opened');
   if (mrs.length === 0) {
     log('No open MRs found');
-    return;
-  }
-  log(`Fetched ${mrs.length} open MRs from GitLab`);
+  } else {
+    log(`Fetched ${mrs.length} open MRs from GitLab`);
 
-  const token = await getAccessToken();
-  const sheet = await sheetsGet(token, 'B:B');
-  const existingIIDs = new Set();
-  if (sheet.values) {
-    for (const row of sheet.values) {
-      const val = (row[0] || '').toString().trim();
-      if (val.startsWith('!')) existingIIDs.add(val);
+    try {
+      const token = await getAccessToken();
+      const sheet = await sheetsGet(token, 'B:B');
+      const existingIIDs = new Set();
+      if (sheet.values) {
+        for (const row of sheet.values) {
+          const val = (row[0] || '').toString().trim();
+          if (val.startsWith('!')) existingIIDs.add(val);
+        }
+      }
+      log(`${existingIIDs.size} existing MRs in sheet`);
+
+      const toAdd = mrs.filter(mr => !existingIIDs.has('!' + mr.iid));
+      if (toAdd.length === 0) {
+        log('All MRs already in sheet — nothing to add');
+      } else {
+        log(`${toAdd.length} new MR(s) to add: ${toAdd.map(m => '!' + m.iid).join(', ')}`);
+        const maxNumber = await getMaxNumber(token);
+        const newRows = toAdd.map((mr, i) => mrToRow(mr, maxNumber + 1 + i));
+        await sheetsAppend(token, newRows);
+        log(`Added ${newRows.length} row(s) to sheet`);
+      }
+    } catch (e) {
+      log(`Sheet sync failed: ${e.message}`);
     }
   }
-  log(`${existingIIDs.size} existing MRs in sheet`);
 
-  const toAdd = mrs.filter(mr => !existingIIDs.has('!' + mr.iid));
-  if (toAdd.length === 0) {
-    log('All MRs already in sheet — nothing to add');
-    return;
+  // Check for merged MRs and auto-close reviews
+  try {
+    const mergedMRs = await fetchGitLabMRs('merged');
+    if (mergedMRs.length > 0) {
+      log(`Found ${mergedMRs.length} merged MRs`);
+      await autoCloseMergedReviews(mergedMRs, log);
+    }
+  } catch (e) {
+    log(`Merged MR check failed: ${e.message}`);
   }
-  log(`${toAdd.length} new MR(s) to add: ${toAdd.map(m => '!' + m.iid).join(', ')}`);
+}
 
-  const maxNumber = await getMaxNumber(token);
-  const newRows = toAdd.map((mr, i) => mrToRow(mr, maxNumber + 1 + i));
+async function autoCloseMergedReviews(mergedMRs, log) {
+  const data = loadData();
+  let closed = 0;
 
-  await sheetsAppend(token, newRows);
-  log(`Added ${newRows.length} row(s) to sheet`);
+  for (const mr of mergedMRs) {
+    const branch = mr.source_branch;
+    const review = data.reviews.find(r =>
+      r.status === 'in_review' &&
+      (r.branch === branch || r.commitRef === branch || r.id === `!${mr.iid}`)
+    );
+
+    if (review) {
+      review.status = 'approved';
+      review.updatedAt = new Date().toISOString();
+      for (const rv of review.reviewers) {
+        if (rv.status === 'pending') {
+          rv.status = 'approved';
+          rv.respondedAt = new Date().toISOString();
+        }
+      }
+      closed++;
+      log(`Auto-closed review ${review.id} (MR !${mr.iid} merged)`);
+    }
+  }
+
+  if (closed > 0) {
+    saveData(data, `Auto-closed ${closed} review(s) due to GitLab merge`);
+    log(`Auto-closed ${closed} review(s)`);
+  }
 }
 
 async function getMaxNumber(token) {

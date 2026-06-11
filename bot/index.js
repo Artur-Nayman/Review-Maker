@@ -267,6 +267,10 @@ client.on('interactionCreate', async interaction => {
 });
 
 async function handleButton(interaction) {
+  if (interaction.customId === 'link-register') {
+    return handleLinkRegister(interaction);
+  }
+
   const firstUnderscore = interaction.customId.indexOf('_');
   const action = interaction.customId.slice(0, firstUnderscore);
   const reviewId = interaction.customId.slice(firstUnderscore + 1);
@@ -363,6 +367,80 @@ async function handleLinkSelect(interaction) {
   });
 }
 
+async function handleLinkRegister(interaction) {
+  const modal = new ModalBuilder()
+    .setCustomId('register-modal')
+    .setTitle('Register as New Reviewer');
+
+  const nameInput = new TextInputBuilder()
+    .setCustomId('name')
+    .setLabel('Your name (as shown in the team)')
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(50);
+
+  const specialityInput = new TextInputBuilder()
+    .setCustomId('speciality')
+    .setLabel('Speciality (Fullstack, Frontend, Backend)')
+    .setStyle(TextInputStyle.Short)
+    .setRequired(false)
+    .setValue('Fullstack')
+    .setMaxLength(20);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(nameInput),
+    new ActionRowBuilder().addComponents(specialityInput)
+  );
+
+  await interaction.showModal(modal);
+}
+
+async function handleRegisterModal(interaction) {
+  const name = interaction.fields.getTextInputValue('name').trim();
+  const speciality = interaction.fields.getTextInputValue('speciality').trim() || 'Fullstack';
+
+  if (!name) {
+    return interaction.reply({ content: 'Name is required.', ephemeral: true });
+  }
+
+  const data = loadData();
+
+  if (data.reviewers.find(r => r.name.toLowerCase() === name.toLowerCase())) {
+    return interaction.reply({ content: `A reviewer with name "${name}" already exists. Use the select menu to link to an existing account.`, ephemeral: true });
+  }
+
+  const existing = getReviewerByDiscordId(data, interaction.user.id);
+  if (existing) {
+    return interaction.reply({ content: `Your Discord is already linked to **${existing.name}**.`, ephemeral: true });
+  }
+
+  const validSpecialities = ['fullstack', 'frontend', 'backend', 'none'];
+  const finalSpeciality = validSpecialities.includes(speciality.toLowerCase())
+    ? speciality.charAt(0).toUpperCase() + speciality.slice(1)
+    : 'Fullstack';
+
+  data.reviewers.push({
+    name,
+    load: 0,
+    speciality: finalSpeciality,
+    role: 'reviewer',
+    email: '',
+    password: '',
+    discordId: interaction.user.id,
+    disabled: false,
+    maxLoad: 0,
+    weeklyCount: 0,
+    maxActiveReviews: 0
+  });
+
+  saveData(data, `User ${name} self-registered via Discord`);
+
+  await interaction.reply({
+    content: `Registered and linked as **${name}** (${finalSpeciality}). You can now approve/reject reviews!`,
+    ephemeral: true
+  });
+}
+
 async function handleFixDoneNotify(interaction) {
   const reviewId = interaction.customId.slice('fixdone-notify_'.length);
   const selectedName = interaction.values[0];
@@ -443,6 +521,10 @@ async function handleManualReview(interaction) {
 }
 
 async function handleModal(interaction) {
+  if (interaction.customId === 'register-modal') {
+    return handleRegisterModal(interaction);
+  }
+
   if (!interaction.customId.startsWith('reject-modal_')) return;
 
   const reviewId = interaction.customId.slice('reject-modal_'.length);

@@ -302,6 +302,7 @@ async function openReviewModal(id) {
       <div class="review-detail-row"><span class="review-detail-label">Approvals</span><span class="review-detail-value">${review.approvalCount}/${review.reviewers.length}</span></div>
       <div class="review-detail-row"><span class="review-detail-label">Reviewers</span><span class="review-detail-value">${review.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name} (${rv.status})${rv.comment ? ': ' + rv.comment : ''}</span>`).join(' ')}</span></div>
       <div class="review-detail-row"><span class="review-detail-label">Created</span><span class="review-detail-value">${new Date(review.createdAt).toLocaleString()}</span></div>
+      ${review.deadlineAt ? `<div class="review-detail-row"><span class="review-detail-label">Deadline</span><span class="review-detail-value" style="${new Date(review.deadlineAt) < new Date() ? 'color:#dc3545;font-weight:bold;' : ''}">${new Date(review.deadlineAt).toLocaleString()}${new Date(review.deadlineAt) < new Date() ? ' (OVERDUE)' : ''}</span></div>` : ''}
       ${review.commits?.length ? `<div class="review-detail-row"><span class="review-detail-label">Commits</span><span class="review-detail-value"><code>${review.commits.join(', ')}</code></span></div>` : ''}
       ${review.size ? `<div class="review-detail-row"><span class="review-detail-label">Size</span><span class="review-detail-value">${review.size}</span></div>` : ''}
       ${escalationHTML}
@@ -461,6 +462,7 @@ async function loadAdminData() {
     loadSelect.dispatchEvent(new Event('change'));
 
     loadPasswords();
+    loadGitLabSettings();
   } catch (err) {
     console.error('Failed to load admin data:', err);
   }
@@ -737,6 +739,41 @@ async function syncDiscordApprovals() {
   btn.textContent = 'Sync Now';
 }
 
+async function loadGitLabSettings() {
+  try {
+    const res = await fetch('/api/settings/gitlab');
+    const data = await res.json();
+    document.getElementById('gitlab-url').value = data.gitlabUrl || '';
+    document.getElementById('gitlab-token').value = data.gitlabToken || '';
+    document.getElementById('gitlab-project').value = data.gitlabProject || '';
+  } catch (err) {
+    console.error('Failed to load GitLab settings:', err);
+  }
+}
+
+async function saveGitLabSettings() {
+  const resultEl = document.getElementById('gitlab-result');
+  try {
+    const res = await fetch('/api/settings/gitlab', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gitlabUrl: document.getElementById('gitlab-url').value.trim(),
+        gitlabToken: document.getElementById('gitlab-token').value.trim(),
+        gitlabProject: document.getElementById('gitlab-project').value.trim()
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      resultEl.innerHTML = '<span class="status-badge approved">GitLab settings saved</span>';
+    } else {
+      resultEl.innerHTML = `<span class="status-badge rejected">${data.error || 'Save failed'}</span>`;
+    }
+  } catch (err) {
+    resultEl.innerHTML = `<span class="status-badge rejected">Error: ${err.message}</span>`;
+  }
+}
+
 async function createNewGroup() {
   const btn = document.querySelector('#admin-season-groups .btn-primary');
   const resultEl = document.getElementById('group-result');
@@ -775,9 +812,10 @@ async function openReviewerEdit(name) {
   document.getElementById('reviewer-edit-role').value = reviewer.role;
   document.getElementById('reviewer-edit-speciality').value = reviewer.speciality || 'None';
   document.getElementById('reviewer-edit-load').value = reviewer.load || 0;
-  document.getElementById('reviewer-edit-maxload').value = reviewer.maxLoad || 3;
+  document.getElementById('reviewer-edit-maxload').value = reviewer.maxLoad || 0;
   document.getElementById('reviewer-edit-weekly').value = reviewer.weeklyCount || 0;
-  document.getElementById('reviewer-edit-maxweekly').value = reviewer.maxActiveReviews || 5;
+  document.getElementById('reviewer-edit-maxweekly').value = reviewer.maxActiveReviews || 0;
+  document.getElementById('reviewer-edit-disabled').checked = !!reviewer.disabled;
   document.getElementById('reviewer-modal-result').style.display = 'none';
   document.getElementById('reviewer-modal').style.display = 'flex';
 }
@@ -1064,9 +1102,26 @@ async function saveReviewerEdit() {
       load: parseInt(document.getElementById('reviewer-edit-load').value) || 0,
       maxLoad: parseInt(document.getElementById('reviewer-edit-maxload').value) || 0,
       weeklyCount: parseInt(document.getElementById('reviewer-edit-weekly').value) || 0,
-      maxActiveReviews: parseInt(document.getElementById('reviewer-edit-maxweekly').value) || 0
+      maxActiveReviews: parseInt(document.getElementById('reviewer-edit-maxweekly').value) || 0,
+      disabled: document.getElementById('reviewer-edit-disabled').checked
     });
     resultEl.textContent = `Saved changes to ${editingReviewerName}`;
+    resultEl.className = 'success-msg';
+    resultEl.style.display = 'block';
+    loadReviewers();
+    loadAdminData();
+    setTimeout(closeReviewerModal, 1500);
+  } catch (err) { resultEl.textContent = err.message; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; }
+}
+
+async function deleteReviewerFromModal() {
+  const name = editingReviewerName;
+  if (!name) return;
+  if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+  const resultEl = document.getElementById('reviewer-modal-result');
+  try {
+    await API.removeReviewer(name);
+    resultEl.textContent = `Deleted ${name}`;
     resultEl.className = 'success-msg';
     resultEl.style.display = 'block';
     loadReviewers();

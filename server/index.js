@@ -278,6 +278,10 @@ app.post('/api/reviews', (req, res) => {
 
   incrementReviewerLoads(data, reviewers);
 
+  const deadlineDays = { imp: 5, mid: 7, low: 10 };
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + (deadlineDays[priority] || 7));
+
   const review = {
     id: generateReviewId(data),
     branch,
@@ -291,7 +295,8 @@ app.post('/api/reviews', (req, res) => {
     updatedAt: new Date().toISOString(),
     escalation: null,
     comments: [],
-    commitRef: commitRef || ''
+    commitRef: commitRef || '',
+    deadlineAt: deadline.toISOString()
   };
 
   data.reviews.push(review);
@@ -668,6 +673,10 @@ app.post('/api/reviews/manual', (req, res) => {
     return { name: reviewer.name, status: 'pending', notified: false };
   });
 
+  const deadlineDays = { imp: 5, mid: 7, low: 10 };
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + (deadlineDays[priority] || 7));
+
   const review = {
     id: generateReviewId(data),
     branch,
@@ -681,7 +690,8 @@ app.post('/api/reviews/manual', (req, res) => {
     updatedAt: new Date().toISOString(),
     escalation: null,
     comments: [],
-    commitRef: commitRef || ''
+    commitRef: commitRef || '',
+    deadlineAt: deadline.toISOString()
   };
 
   data.reviews.push(review);
@@ -949,6 +959,28 @@ app.put('/api/settings', (req, res) => {
   data.settings = { ...data.settings, ...req.body };
   saveData(data, 'Settings updated');
   res.json(data.settings);
+});
+
+app.get('/api/settings/gitlab', (req, res) => {
+  const { queryOne } = require('./db');
+  const url = queryOne("SELECT value FROM settings WHERE key = 'gitlabUrl'");
+  const token = queryOne("SELECT value FROM settings WHERE key = 'gitlabToken'");
+  const project = queryOne("SELECT value FROM settings WHERE key = 'gitlabProject'");
+  res.json({
+    gitlabUrl: url?.value || '',
+    gitlabToken: token?.value || '',
+    gitlabProject: project?.value || ''
+  });
+});
+
+app.put('/api/settings/gitlab', (req, res) => {
+  const { execute, persist } = require('./db');
+  const { gitlabUrl, gitlabToken, gitlabProject } = req.body;
+  if (gitlabUrl !== undefined) execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('gitlabUrl', ?)", [gitlabUrl]);
+  if (gitlabToken !== undefined) execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('gitlabToken', ?)", [gitlabToken]);
+  if (gitlabProject !== undefined) execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('gitlabProject', ?)", [gitlabProject]);
+  persist();
+  res.json({ message: 'GitLab settings updated' });
 });
 
 // --- Debug routes ---

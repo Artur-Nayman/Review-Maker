@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { loadData, saveData, getReviewerByDiscordId } = require('../utils/data');
 
 module.exports = {
@@ -18,30 +18,35 @@ module.exports = {
     }
 
     const available = data.reviewers.filter(r => !r.discordId);
+    const components = [];
 
-    if (available.length === 0) {
-      return interaction.reply({
-        content: 'All reviewer accounts are already linked to Discord users.',
-        ephemeral: true
-      });
+    if (available.length > 0) {
+      const options = available.slice(0, 25).map(r => ({
+        label: r.name,
+        description: `${r.role} - ${r.speciality}`,
+        value: r.name
+      }));
+
+      const select = new StringSelectMenuBuilder()
+        .setCustomId('link-select')
+        .setPlaceholder('Select your reviewer account')
+        .addOptions(options);
+
+      components.push(new ActionRowBuilder().addComponents(select));
     }
 
-    const options = available.slice(0, 25).map(r => ({
-      label: r.name,
-      description: `${r.role} - ${r.speciality}`,
-      value: r.name
-    }));
+    const registerBtn = new ButtonBuilder()
+      .setCustomId('link-register')
+      .setLabel('Register as new reviewer')
+      .setStyle(ButtonStyle.Primary);
 
-    const select = new StringSelectMenuBuilder()
-      .setCustomId('link-select')
-      .setPlaceholder('Select your reviewer account')
-      .addOptions(options);
-
-    const row = new ActionRowBuilder().addComponents(select);
+    components.push(new ActionRowBuilder().addComponents(registerBtn));
 
     await interaction.reply({
-      content: 'Select your reviewer account:',
-      components: [row],
+      content: available.length > 0
+        ? 'Select your reviewer account, or register as a new one:'
+        : 'No unlinked accounts found. Register as a new reviewer:',
+      components,
       ephemeral: true
     });
   }

@@ -183,6 +183,30 @@
           <div id="sync-result" style="margin-top:0.75rem;"></div>
         </div>
 
+        <div class="admin-section" id="admin-gitlab">
+          <h3>GitLab Integration</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
+            Configure GitLab to auto-sync MRs and auto-close reviews when MRs are merged.
+          </p>
+          <div class="form-group">
+            <label>GitLab URL</label>
+            <input type="text" id="gitlab-url" placeholder="https://gitlab.example.com" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+          </div>
+          <div class="form-group" style="margin-top:0.5rem;">
+            <label>GitLab Token (private)</label>
+            <input type="password" id="gitlab-token" placeholder="glpat-xxxx" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+          </div>
+          <div class="form-group" style="margin-top:0.5rem;">
+            <label>Project Path (e.g. group/project)</label>
+            <input type="text" id="gitlab-project" placeholder="mygroup/myproject" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+          </div>
+          <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="saveGitLabSettings()">Save GitLab Settings</button>
+            <button class="btn btn-ghost" onclick="loadGitLabSettings()">Refresh</button>
+          </div>
+          <div id="gitlab-result" style="margin-top:0.75rem;"></div>
+        </div>
+
         <div class="admin-section" id="admin-manage-roles">
           <h3>Change Role</h3>
           <form id="role-form">
@@ -387,9 +411,18 @@
           <div class="form-group"><label>Weekly Count</label><input type="number" id="reviewer-edit-weekly" min="0" max="99" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
           <div class="form-group"><label>Max Weekly</label><input type="number" id="reviewer-edit-maxweekly" min="1" max="99" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
         </div>
-        <div style="margin-top:1rem;display:flex;gap:0.5rem;">
-          <button class="btn btn-primary" onclick="saveReviewerEdit()">Save Changes</button>
-          <button class="btn btn-ghost" onclick="closeReviewerModal()">Cancel</button>
+        <div class="form-group" style="margin-top:0.75rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+            <input type="checkbox" id="reviewer-edit-disabled" style="width:1.25rem;height:1.25rem;">
+            <span>Disabled (skip in review assignments)</span>
+          </label>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:space-between;">
+          <button class="btn btn-danger" onclick="deleteReviewerFromModal()" style="background:#dc3545;color:#fff;border:none;">Delete User</button>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="saveReviewerEdit()">Save Changes</button>
+            <button class="btn btn-ghost" onclick="closeReviewerModal()">Cancel</button>
+          </div>
         </div>
         <div id="reviewer-modal-result" class="success-msg" style="display:none;margin-top:0.75rem;"></div>
       </div>

@@ -28,7 +28,8 @@ module.exports = {
         .addStringOption(opt => opt.setName('speciality').setDescription('Speciality').addChoices(
           { name: 'Fullstack', value: 'Fullstack' },
           { name: 'Frontend', value: 'Frontend' },
-          { name: 'Backend', value: 'Backend' }
+          { name: 'Backend', value: 'Backend' },
+          { name: 'None', value: 'None' }
         ))
         .addStringOption(opt => opt.setName('role').setDescription('Role').addChoices(
           { name: 'Reviewer', value: 'reviewer' },

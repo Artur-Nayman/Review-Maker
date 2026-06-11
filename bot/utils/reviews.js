@@ -80,6 +80,10 @@ function createReview(branch, merger, reviewType, priority, commitRef = '') {
 
   incrementReviewerLoads(data, reviewers);
 
+  const deadlineDays = { imp: 5, mid: 7, low: 10 };
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + (deadlineDays[priority] || 7));
+
   const review = {
     id: generateReviewId(data),
     branch,
@@ -93,7 +97,8 @@ function createReview(branch, merger, reviewType, priority, commitRef = '') {
     updatedAt: new Date().toISOString(),
     escalation: null,
     comments: [],
-    commitRef
+    commitRef,
+    deadlineAt: deadline.toISOString()
   };
 
   data.reviews.push(review);

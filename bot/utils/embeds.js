@@ -70,6 +70,11 @@ function createReviewEmbed(review, showMentions = false) {
     { name: 'Reviewers', value: reviewersText || 'None assigned' }
   ];
 
+  if (review.deadlineAt) {
+    const isOverdue = new Date(review.deadlineAt) < new Date();
+    fields.splice(6, 0, { name: 'Deadline', value: `${new Date(review.deadlineAt).toLocaleString()}${isOverdue ? ' ⚠️ OVERDUE' : ''}`, inline: true });
+  }
+
   if (review.needAttention && !review.needAttention.resolved) {
     fields.push({ name: '⚠️ Needs Attention', value: review.needAttention.comment, inline: false });
   }
