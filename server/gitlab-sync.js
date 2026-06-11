@@ -70,8 +70,8 @@ async function sheetsUpdate(token, range, values) {
 }
 
 async function fetchGitLabMRs() {
-  if (!GITLAB_TOKEN) {
-    console.log('[GitLabSync] No GITLAB_TOKEN configured — skipping');
+  if (!GITLAB_TOKEN || GITLAB_API.includes('your-gitlab-instance') || PROJECT === 'your-project-path') {
+    console.log('[GitLabSync] GitLab not configured — skipping (set GITLAB_API and PROJECT in config)');
     return [];
   }
 
