@@ -25,16 +25,26 @@ let gitAvailable = false;
 
 let isGitBusy = false;
 
+// Crash logger — writes to logs/crash.log
+const LOG_DIR = path.join(projectRoot, 'logs');
+function logCrash(message) {
+  try {
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(path.join(LOG_DIR, 'crash.log'), `[${timestamp}] ${message}\n`);
+  } catch { /* best effort */ }
+}
+
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[FATAL] Unhandled Rejection:', reason instanceof Error ? reason.message : reason);
-  if (reason instanceof Error && reason.stack) {
-    console.error(reason.stack);
-  }
+  const msg = `Unhandled Rejection: ${reason instanceof Error ? reason.message : reason}${reason instanceof Error && reason.stack ? '\n' + reason.stack : ''}`;
+  console.error('[FATAL]', msg);
+  logCrash(msg);
 });
 
 process.on('uncaughtException', (err, origin) => {
-  console.error('[FATAL] Uncaught Exception:', err.message, 'origin:', origin);
-  if (err.stack) console.error(err.stack);
+  const msg = `Uncaught Exception: ${err.message} (origin: ${origin})${err.stack ? '\n' + err.stack : ''}`;
+  console.error('[FATAL]', msg);
+  logCrash(msg);
   process.exit(1);
 });
 

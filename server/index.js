@@ -2,11 +2,35 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { loadData, saveData, generateReviewId, logAudit, getAuditLog } = require('./db');
+
+// Crash logger — writes to logs/crash-server.log
+const LOG_DIR = path.join(__dirname, '..', 'logs');
+function logCrash(message) {
+  try {
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(path.join(LOG_DIR, 'crash-server.log'), `[${timestamp}] ${message}\n`);
+  } catch { /* best effort */ }
+}
+
+process.on('unhandledRejection', (reason, promise) => {
+  const msg = `Unhandled Rejection: ${reason instanceof Error ? reason.message : reason}${reason instanceof Error && reason.stack ? '\n' + reason.stack : ''}`;
+  console.error('[FATAL]', msg);
+  logCrash(msg);
+});
+
+process.on('uncaughtException', (err, origin) => {
+  const msg = `Uncaught Exception: ${err.message} (origin: ${origin})${err.stack ? '\n' + err.stack : ''}`;
+  console.error('[FATAL]', msg);
+  logCrash(msg);
+  process.exit(1);
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
