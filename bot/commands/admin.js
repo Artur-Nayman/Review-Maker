@@ -169,7 +169,7 @@ module.exports = {
           return interaction.reply({ embeds: [createErrorEmbed('User already exists')], ephemeral: true });
         }
 
-        const isNonReview = role === 'admin' || role === 'manager' || role === 'scrum_master';
+        const isNonReview = role === 'manager' || role === 'scrum_master';
         const finalSpeciality = isNonReview ? 'None' : speciality;
         const generatedPassword = generatePassword();
 
@@ -232,7 +232,7 @@ module.exports = {
           }
         }
 
-        const isNonReview = role === 'admin' || role === 'manager' || role === 'scrum_master';
+        const isNonReview = role === 'manager' || role === 'scrum_master';
         if (isNonReview) {
           reviewer.speciality = 'None';
         }

@@ -17,11 +17,11 @@ function getReviewerByDiscordId(data, discordId) {
 }
 
 function isReviewableRole(role) {
-  return role === 'reviewer' || role === 'senior';
+  return role === 'reviewer' || role === 'senior' || role === 'admin';
 }
 
 function isNonReviewRole(role) {
-  return role === 'admin' || role === 'manager' || role === 'scrum_master';
+  return role === 'manager' || role === 'scrum_master';
 }
 
 function generatePassword() {

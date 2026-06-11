@@ -63,11 +63,11 @@ function getReviewerByName(data, name) {
 }
 
 function isReviewableRole(role) {
-  return role === 'reviewer' || role === 'senior';
+  return role === 'reviewer' || role === 'senior' || role === 'admin';
 }
 
 function isNonReviewRole(role) {
-  return role === 'admin' || role === 'manager' || role === 'scrum_master';
+  return role === 'manager' || role === 'scrum_master';
 }
 
 function isPasswordHashed(password) {
@@ -739,12 +739,49 @@ app.delete('/api/reviewers/:name', (req, res) => {
   const idx = data.reviewers.findIndex(r => r.name.toLowerCase() === req.params.name.toLowerCase());
 
   if (idx === -1) return res.status(404).json({ error: 'User not found' });
-  if (data.reviewers[idx].role === 'admin') {
-    return res.status(400).json({ error: 'Cannot delete admin' });
+
+  const deletedReviewer = data.reviewers[idx];
+  const deletedName = deletedReviewer.name;
+
+  // Auto-reassign active reviews
+  let reassignedCount = 0;
+  for (const review of data.reviews) {
+    if (review.status !== 'in_review' && review.status !== 'fix_made') continue;
+
+    const reviewerEntry = review.reviewers.find(r => r.name === deletedName && r.status === 'pending');
+    if (!reviewerEntry) continue;
+
+    // Find replacement reviewers
+    const assignedNames = review.reviewers.map(r => r.name);
+    const count = data.settings.reviewersPerRequest || 3;
+    const replacements = selectReviewers(data, review.reviewType, 1, review.merger);
+
+    // Filter out already assigned reviewers
+    const availableReplacements = replacements.filter(r => !assignedNames.includes(r.name));
+
+    if (availableReplacements.length > 0) {
+      const replacement = availableReplacements[0];
+      // Remove deleted reviewer
+      review.reviewers = review.reviewers.filter(r => r.name !== deletedName);
+      // Add replacement
+      review.reviewers.push({ name: replacement.name, status: 'pending', notified: false });
+      // Update loads
+      const replacementReviewer = getReviewerByName(data, replacement.name);
+      if (replacementReviewer) {
+        replacementReviewer.load = Math.min(replacementReviewer.load + 1, data.settings.maxLoad || 3);
+      }
+      reassignedCount++;
+    } else {
+      // No replacement available, just remove the deleted reviewer
+      review.reviewers = review.reviewers.filter(r => r.name !== deletedName);
+    }
   }
 
   data.reviewers.splice(idx, 1);
-  saveData(data, `User ${req.params.name} removed`);
+  const msg = reassignedCount > 0
+    ? `User ${deletedName} removed, ${reassignedCount} review(s) reassigned`
+    : `User ${deletedName} removed`;
+  saveData(data, msg);
   res.json(data.reviewers);
 });
 
