@@ -94,7 +94,7 @@ client.on('shardResume', (replayed, id) => {
   console.log(`[Health] Shard ${id} resumed (${replayed} events replayed)`);
 });
 
-client.on('ready', async () => {
+client.on('clientReady', async () => {
   const db = require('../server/db');
   try {
     await db.init();
