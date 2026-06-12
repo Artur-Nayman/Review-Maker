@@ -104,6 +104,43 @@ module.exports = {
         .setName('delete-review')
         .setDescription('Soft-delete a review by ID (admin only)')
         .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('full-approve')
+        .setDescription('Fully approve a review (admin only)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('reassign')
+        .setDescription('Reassign reviewers to a review (admin only)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('restore-review')
+        .setDescription('Restore a soft-deleted review (admin only)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('reset-review')
+        .setDescription('Reset review to pending state (admin only)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('set-deadline')
+        .setDescription('Manually set deadline for a review (admin only)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. REV-42 or just 42)').setRequired(true))
+        .addStringOption(opt => opt.setName('deadline').setDescription('Deadline (YYYY-MM-DD or days from now)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('broadcast')
+        .setDescription('Send a message to all reviewers (admin only)')
+        .addStringOption(opt => opt.setName('message').setDescription('Message to broadcast').setRequired(true))
     ),
 
   async execute(interaction) {
@@ -370,6 +407,202 @@ module.exports = {
 
         return interaction.reply({
           embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) has been deleted.`)]
+        });
+      }
+
+      case 'full-approve': {
+        const id = interaction.options.getString('id');
+        const review = findReviewById(data, id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed(`Review with ID "${id}" not found`)], ephemeral: true });
+        }
+
+        if (review.status === 'deleted') {
+          return interaction.reply({ embeds: [createErrorEmbed('Cannot approve a deleted review')], ephemeral: true });
+        }
+
+        let approvedCount = 0;
+        for (const rv of review.reviewers) {
+          if (rv.status !== 'approved') {
+            rv.status = 'approved';
+            rv.comment = 'Admin full approval';
+            rv.respondedAt = new Date().toISOString();
+            approvedCount++;
+          }
+        }
+
+        review.approvalCount = review.reviewers.length;
+        review.status = 'approved';
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} fully approved by admin ${user.name}`);
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) has been fully approved by admin. ${approvedCount} reviewer(s) marked as approved.`)]
+        });
+      }
+
+      case 'reassign': {
+        const id = interaction.options.getString('id');
+        const review = findReviewById(data, id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed(`Review with ID "${id}" not found`)], ephemeral: true });
+        }
+
+        if (review.status === 'deleted') {
+          return interaction.reply({ embeds: [createErrorEmbed('Cannot reassign a deleted review')], ephemeral: true });
+        }
+
+        // Decrement load for current pending reviewers
+        for (const rv of review.reviewers) {
+          if (rv.status === 'pending') {
+            const reviewer = getReviewerByName(data, rv.name);
+            if (reviewer && reviewer.load > 0) {
+              reviewer.load--;
+            }
+          }
+        }
+
+        // Clear current reviewers
+        review.reviewers = [];
+        review.approvalCount = 0;
+        review.status = 'in_review';
+        review.updatedAt = new Date().toISOString();
+
+        // Select new reviewers
+        const { selectReviewers, incrementReviewerLoads } = require('../utils/reviews');
+        const count = data.settings.reviewersPerRequest || 3;
+        const newReviewers = selectReviewers(data, review.reviewType, count, review.merger);
+
+        if (newReviewers.length === 0) {
+          saveData(data, `Review ${review.id} reviewers cleared by admin ${user.name}`);
+          return interaction.reply({
+            embeds: [createErrorEmbed('No available reviewers found. All reviewers may be at max load.')]
+          });
+        }
+
+        review.reviewers = newReviewers;
+        incrementReviewerLoads(data, newReviewers);
+        saveData(data, `Review ${review.id} reassigned by admin ${user.name}`);
+
+        const reviewerMentions = newReviewers.map(rv => {
+          const r = getReviewerByName(data, rv.name);
+          return r && r.discordId ? `<@${r.discordId}>` : rv.name;
+        }).join(', ');
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) has been reassigned to: ${reviewerMentions}`)]
+        });
+      }
+
+      case 'restore-review': {
+        const id = interaction.options.getString('id');
+        const review = findReviewById(data, id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed(`Review with ID "${id}" not found`)], ephemeral: true });
+        }
+
+        if (review.status !== 'deleted') {
+          return interaction.reply({ embeds: [createErrorEmbed('Review is not deleted')], ephemeral: true });
+        }
+
+        review.status = 'in_review';
+        review.deletedBy = null;
+        review.deletedAt = null;
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} restored by admin ${user.name}`);
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) has been restored.`)]
+        });
+      }
+
+      case 'reset-review': {
+        const id = interaction.options.getString('id');
+        const review = findReviewById(data, id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed(`Review with ID "${id}" not found`)], ephemeral: true });
+        }
+
+        if (review.status === 'deleted') {
+          return interaction.reply({ embeds: [createErrorEmbed('Cannot reset a deleted review. Use restore-review first.')], ephemeral: true });
+        }
+
+        // Decrement load for pending reviewers
+        for (const rv of review.reviewers) {
+          if (rv.status === 'pending') {
+            const reviewer = getReviewerByName(data, rv.name);
+            if (reviewer && reviewer.load > 0) {
+              reviewer.load--;
+            }
+          }
+        }
+
+        // Reset all reviewers to pending
+        for (const rv of review.reviewers) {
+          rv.status = 'pending';
+          rv.comment = '';
+          rv.respondedAt = null;
+        }
+
+        review.approvalCount = 0;
+        review.status = 'in_review';
+        review.escalation = null;
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} reset to pending by admin ${user.name}`);
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) has been reset to pending state.`)]
+        });
+      }
+
+      case 'set-deadline': {
+        const id = interaction.options.getString('id');
+        const deadlineInput = interaction.options.getString('deadline');
+        const review = findReviewById(data, id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed(`Review with ID "${id}" not found`)], ephemeral: true });
+        }
+
+        let deadlineDate;
+        const daysMatch = deadlineInput.match(/^(\d+)d?$/);
+        if (daysMatch) {
+          // Days from now
+          const days = parseInt(daysMatch[1]);
+          deadlineDate = new Date();
+          deadlineDate.setDate(deadlineDate.getDate() + days);
+        } else {
+          // Try parsing as date
+          deadlineDate = new Date(deadlineInput);
+          if (isNaN(deadlineDate.getTime())) {
+            return interaction.reply({ embeds: [createErrorEmbed('Invalid deadline format. Use YYYY-MM-DD or number of days (e.g., 3 or 3d)')], ephemeral: true });
+          }
+        }
+
+        review.deadlineAt = deadlineDate.toISOString();
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} deadline set by admin ${user.name}`);
+
+        return interaction.reply({
+          embeds: [createSuccessEmbed(`Review **${review.id}** (${review.branch}) deadline set to **${deadlineDate.toLocaleDateString()}**`)]
+        });
+      }
+
+      case 'broadcast': {
+        const message = interaction.options.getString('message');
+        const reviewers = data.reviewers.filter(r => r.discordId && !r.disabled);
+
+        if (reviewers.length === 0) {
+          return interaction.reply({ embeds: [createErrorEmbed('No linked reviewers to broadcast to')], ephemeral: true });
+        }
+
+        const mentions = reviewers.map(r => `<@${r.discordId}>`).join(' ');
+        return interaction.reply({
+          content: `${mentions}\n\n📢 **Admin Broadcast:** ${message}`
         });
       }
     }

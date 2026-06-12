@@ -109,6 +109,12 @@ module.exports = {
         .setName('details')
         .setDescription('Show review details')
         .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. 1 or REV-1)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('unassign')
+        .setDescription('Unassign yourself from a review (notifies admin)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. 1 or REV-1)').setRequired(true))
     ),
 
   async execute(interaction) {
@@ -314,6 +320,50 @@ module.exports = {
         const embed = createReviewEmbed(review);
         const buttons = reviewer ? createActionButtons(review, reviewer.name) : [];
         return interaction.reply({ embeds: [embed], components: buttons });
+      }
+
+      case 'unassign': {
+        const id = interaction.options.getString('id');
+        const review = getReviewById(id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed('Review not found')], ephemeral: true });
+        }
+
+        if (review.status === 'deleted') {
+          return interaction.reply({ embeds: [createErrorEmbed('Cannot unassign from a deleted review')], ephemeral: true });
+        }
+
+        const myReviewer = review.reviewers.find(r => r.name.toLowerCase() === reviewer.name.toLowerCase());
+
+        if (!myReviewer) {
+          return interaction.reply({ embeds: [createErrorEmbed('You are not assigned to this review')], ephemeral: true });
+        }
+
+        if (myReviewer.status !== 'pending') {
+          return interaction.reply({ embeds: [createErrorEmbed('You have already responded to this review')], ephemeral: true });
+        }
+
+        // Decrement load
+        if (reviewer.load > 0) {
+          reviewer.load--;
+        }
+
+        // Remove reviewer from review
+        review.reviewers = review.reviewers.filter(r => r.name.toLowerCase() !== reviewer.name.toLowerCase());
+        review.updatedAt = new Date().toISOString();
+
+        const { saveData } = require('../utils/data');
+        saveData(data, `${reviewer.name} unassigned from review ${review.id}`);
+
+        // Notify admins
+        const admins = data.reviewers.filter(r => r.role === 'admin' && r.discordId);
+        const adminMentions = admins.map(a => `<@${a.discordId}>`).join(' ');
+
+        return interaction.reply({
+          content: `${adminMentions}\n⚠️ **${reviewer.name}** has unassigned themselves from review **${review.id}** (${review.branch}).`,
+          embeds: [createErrorEmbed(`You have been unassigned from review **${review.id}**. An admin has been notified.`)]
+        });
       }
     }
   }
