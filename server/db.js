@@ -125,6 +125,11 @@ async function init() {
   } catch (e) {
     // Column already exists
   }
+  try {
+    db.run("ALTER TABLE reviewers ADD COLUMN discordId TEXT DEFAULT ''");
+  } catch (e) {
+    // Column already exists
+  }
 
   initialized = true;
   migrateFromJsonIfNeeded();
@@ -278,7 +283,7 @@ function saveData(data, commitMsg) {
     execute('DELETE FROM settings');
 
     for (const r of data.reviewers || []) {
-      execute('INSERT INTO reviewers (name, load, speciality, role, email, password, disabled, maxLoad, weeklyCount, maxActiveReviews) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '', r.disabled ? 1 : 0, r.maxLoad || 0, r.weeklyCount || 0, r.maxActiveReviews || 0]);
+      execute('INSERT INTO reviewers (name, load, speciality, role, email, password, disabled, maxLoad, weeklyCount, maxActiveReviews, discordId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [r.name, r.load || 0, r.speciality || 'Fullstack', r.role || 'reviewer', r.email || '', r.password || '', r.disabled ? 1 : 0, r.maxLoad || 0, r.weeklyCount || 0, r.maxActiveReviews || 0, r.discordId || '']);
     }
 
     for (const review of data.reviews || []) {
