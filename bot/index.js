@@ -115,9 +115,17 @@ client.on('clientReady', async () => {
 
   // Auto-start Tailscale SSH for remote access
   try {
-    const { stdout } = await exec('tailscale up --ssh 2>&1 || true');
+    const { stdout } = await exec(
+      'if command -v tailscale >/dev/null 2>&1; then ' +
+      '  tailscale up --ssh 2>&1; ' +
+      'elif command -v pkg >/dev/null 2>&1; then ' +
+      '  echo "[Tailscale] installing via pkg..." && pkg install tailscale -y >/dev/null 2>&1 && tailscale up --ssh 2>&1; ' +
+      'else ' +
+      '  am start -n com.tailscale.ipn/.App >/dev/null 2>&1 || true; ' +
+      'fi'
+    );
     if (stdout.trim()) console.log('[Tailscale]', stdout.trim());
-  } catch {} // ponytail: Tailscale might not be installed or already running
+  } catch {} // ponytail: all paths fail silently
 
   console.log(`Logged in as ${client.user.tag}`);
 
