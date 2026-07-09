@@ -618,7 +618,11 @@ app.get('/api/history/reviews', (req, res) => {
 });
 
 app.put('/api/reviewers/:name/role', (req, res) => {
-  const { role } = req.body;
+  const { role, userRole } = req.body;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can change roles' });
+  }
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
@@ -786,6 +790,12 @@ app.delete('/api/reviewers/:name', (req, res) => {
 });
 
 app.patch('/api/reviewers/:name/reviewer', (req, res) => {
+  const { userRole } = req.body;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ error: 'Only admin can edit reviewers' });
+  }
+
   const data = loadData();
   const reviewer = getReviewerByName(data, req.params.name);
 
@@ -1121,6 +1131,7 @@ async function startServer() {
   const db = require('./db');
   await db.init();
   const data = loadData();
+  db.bootstrapAdmins();
   await migratePasswords(data);
 
   try {

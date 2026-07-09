@@ -108,6 +108,7 @@ client.on('clientReady', async () => {
   const db = require('../server/db');
   try {
     await db.init();
+    db.bootstrapAdmins();
   } catch (e) {
     console.error('[DB] Init failed:', e.message);
   }

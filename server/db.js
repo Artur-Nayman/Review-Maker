@@ -2,6 +2,11 @@ const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 
+const HARDCODED_ADMIN_DISCORD_IDS = [
+  '424105820385705984', // Artur Nayman
+  '341280133107286017'  // Minna Arponen
+];
+
 const DB_PATH = process.env.TEST_DB_PATH || path.join(__dirname, 'reviewmaker.db');
 const DATA_PATH = process.env.TEST_DATA_PATH || path.join(__dirname, 'data.json');
 const NUMERIC_SETTINGS = ['nextReviewNumber', 'maxLoad', 'reviewersPerRequest'];
@@ -272,6 +277,26 @@ function loadData() {
   return { reviewers, reviews, settings };
 }
 
+function bootstrapAdmins() {
+  ensureInit();
+  const data = loadData();
+  let changed = false;
+
+  for (const discordId of HARDCODED_ADMIN_DISCORD_IDS) {
+    const reviewer = data.reviewers.find(r => r.discordId === discordId);
+    if (reviewer && reviewer.role !== 'admin') {
+      reviewer.role = 'admin';
+      changed = true;
+      console.log(`[Bootstrap] Restored admin role for Discord ID ${discordId} (${reviewer.name})`);
+    }
+  }
+
+  if (changed) {
+    saveData(data, 'Admin bootstrap: restored admin roles for hardcoded Discord IDs');
+    console.log('[Bootstrap] Admin roles restored');
+  }
+}
+
 function saveData(data, commitMsg) {
   ensureInit();
   db.run('BEGIN');
@@ -340,6 +365,7 @@ module.exports = {
   init,
   loadData,
   saveData,
+  bootstrapAdmins,
   logAudit,
   getAuditLog,
   generateReviewId,
