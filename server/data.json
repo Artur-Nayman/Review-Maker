@@ -137,7 +137,7 @@
       "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6"
     },
     {
-      "name": "Minna",
+      "name": "ScrumMaster",
       "load": 0,
       "speciality": "None",
       "role": "admin",
@@ -155,61 +155,9 @@
   ],
   "reviews": [
     {
-      "id": "REV-27",
-      "branch": "feature/seed-for-reservations",
-      "merger": "Reviewer08",
-      "approvalCount": 0,
-      "status": "in_review",
-      "priority": "imp",
-      "reviewType": "frontend",
-      "createdAt": "2026-05-29T08:33:00.000Z",
-      "updatedAt": "2026-05-29T08:33:00.000Z",
-      "escalation": null,
-      "deletedBy": null,
-      "deletedAt": null,
-      "commitRef": "",
-      "reviewers": [
-        {
-          "reviewId": "REV-27",
-          "name": "Reviewer10",
-          "status": "pending",
-          "comment": "",
-          "notified": false,
-          "respondedAt": null
-        },
-        {
-          "reviewId": "REV-27",
-          "name": "Reviewer16",
-          "status": "pending",
-          "comment": "",
-          "notified": false,
-          "respondedAt": null
-        },
-        {
-          "reviewId": "REV-27",
-          "name": "Reviewer12",
-          "status": "pending",
-          "comment": "",
-          "notified": false,
-          "respondedAt": null
-        }
-      ],
-      "comments": []
-    },
-    {
-      "id": "REV-26",
-      "branch": "feature/varausapp-reservable-modals",
-      "merger": "Reviewer07",
-      "approvalCount": 0,
-      "status": "in_review",
-      "priority": "mid",
-      "reviewType": "fullstack",
-      "createdAt": "2026-05-28T12:27:00.000Z",
-      "updatedAt": "2026-05-28T12:27:00.000Z",
-      "escalation": null,
-      "deletedBy": null,
-      "deletedAt": null,
-      "commitRef": "",
+      "id": "a728a0ad-d8c0-43cb-977b-faa654d76b15",
+      "branch": "example-feature-branch",
+      "merger": "Reviewer03",
       "reviewers": [
         {
           "reviewId": "REV-26",
@@ -662,7 +610,6 @@
   "settings": {
     "reviewersPerRequest": 3,
     "maxLoad": 3,
-    "adminPassword": "changeme",
-    "nextReviewNumber": 28
+    "adminPassword": "changeme"
   }
 }
