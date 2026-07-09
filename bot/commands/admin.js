@@ -2,6 +2,8 @@ const { SlashCommandBuilder } = require('discord.js');
 const bcrypt = require('bcryptjs');
 const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity, findReviewById } = require('../utils/data');
 const { createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
+const { exec } = require('child_process');
+const path = require('path');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -141,6 +143,11 @@ module.exports = {
         .setName('broadcast')
         .setDescription('Send a message to all reviewers (admin only)')
         .addStringOption(opt => opt.setName('message').setDescription('Message to broadcast').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('git-pull')
+        .setDescription('Force git pull from dashboard-remote and restart on changes')
     ),
 
   async execute(interaction) {
@@ -604,6 +611,29 @@ module.exports = {
         return interaction.reply({
           content: `${mentions}\n\n📢 **Admin Broadcast:** ${message}`
         });
+      }
+
+      case 'git-pull': {
+        await interaction.deferReply({ ephemeral: true });
+        try {
+          const projectRoot = path.resolve(__dirname, '../..');
+          const { stdout } = await new Promise((resolve, reject) => {
+            exec('git pull origin dashboard-remote', { cwd: projectRoot }, (err, stdout, stderr) => {
+              if (err) reject(new Error(stderr || err.message));
+              else resolve({ stdout });
+            });
+          });
+          const hasChanges = !stdout.includes('Already up to date');
+          await interaction.editReply({
+            content: `\`\`\`\n${stdout.trim()}\n\`\`\`\n${hasChanges ? '🔄 Changes detected — restarting…' : '✅ Already up to date.'}`
+          });
+          if (hasChanges) setTimeout(() => process.exit(0), 1000);
+        } catch (err) {
+          await interaction.editReply({
+            content: `❌ Git pull failed:\n\`\`\`\n${err.message}\n\`\`\``
+          });
+        }
+        break;
       }
     }
   }
