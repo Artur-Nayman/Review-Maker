@@ -113,6 +113,12 @@ client.on('clientReady', async () => {
     console.error('[DB] Init failed:', e.message);
   }
 
+  // Auto-start Tailscale SSH for remote access
+  try {
+    const { stdout } = await exec('tailscale up --ssh 2>&1 || true');
+    if (stdout.trim()) console.log('[Tailscale]', stdout.trim());
+  } catch {} // ponytail: Tailscale might not be installed or already running
+
   console.log(`Logged in as ${client.user.tag}`);
 
   // Auto-deploy slash commands on every start
