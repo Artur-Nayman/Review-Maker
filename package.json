@@ -5,15 +5,34 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "bot": "node bot/index.js",
+    "bot:deploy": "node bot/deploy-commands.js",
+    "all": "concurrently \"npm run start\" \"npm run bot\"",
+    "test": "jest --runInBand --forceExit --detectOpenHandles --testTimeout=15000"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/tests"],
+    "testMatch": ["**/tests/api.test.js"]
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.3",
     "body-parser": "^1.20.2",
+    "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "googleapis": "^172.0.0",
+    "simple-git": "^3.36.0",
+    "sql.js": "^1.14.1",
     "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
   }
 }

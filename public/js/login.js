@@ -5,8 +5,6 @@ const passwordHint = document.getElementById('password-hint');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 
-let usersWithPasswords = new Set();
-
 async function loadUsers() {
   try {
     const res = await fetch('/api/reviewers');
@@ -19,10 +17,6 @@ async function loadUsers() {
       opt.value = r.name;
       opt.textContent = `${r.name} (${r.speciality})`;
       userSelect.appendChild(opt);
-
-      if (r.hasPassword) {
-        usersWithPasswords.add(r.name);
-      }
     });
   } catch (err) {
     loginError.textContent = 'Failed to load users. Is the server running?';
@@ -31,17 +25,9 @@ async function loadUsers() {
 }
 
 userSelect.addEventListener('change', () => {
-  const selected = userSelect.value;
-
-  if (usersWithPasswords.has(selected)) {
-    passwordHint.style.display = 'block';
-    loginPassword.required = true;
-    loginPassword.placeholder = 'Enter your password';
-  } else {
-    passwordHint.style.display = 'none';
-    loginPassword.required = false;
-    loginPassword.placeholder = 'Optional (set after first login)';
-  }
+  passwordHint.style.display = 'block';
+  loginPassword.required = true;
+  loginPassword.placeholder = 'Enter your password';
 });
 
 loginForm.addEventListener('submit', async (e) => {
@@ -67,12 +53,6 @@ loginForm.addEventListener('submit', async (e) => {
     }
 
     localStorage.setItem('reviewMakerUser', JSON.stringify(data));
-
-    if (!data.hasPassword && data.role !== 'admin') {
-      window.location.href = '/set-password.html?token=first-login&name=' + encodeURIComponent(data.name);
-      return;
-    }
-
     window.location.href = '/dashboard.html';
   } catch (err) {
     loginError.textContent = 'Connection error. Is the server running?';

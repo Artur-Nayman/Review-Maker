@@ -10,35 +10,35 @@
     },
     {
       "name": "Reviewer01",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$x7R8TIRnqiBPkhgv9XKXUOsNtkKd515euVkU/3umVNrj8uCl8OgfK"
     },
     {
       "name": "Reviewer02",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$q72ZyM5jY.j629Wu0n53ReoChUTHwwE5BlKOFh06nuyfrmj8Gxe8S"
     },
     {
       "name": "Reviewer03",
-      "load": 0,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$kV1F3qMWBQ.ojYwfoUALRe/fyQ3jfYeJZajNsjHHpFITy6E7by3y2"
     },
     {
       "name": "Reviewer04",
-      "load": 0,
+      "load": 1,
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$2yRVBEtLRSyr2Kajs6U5nOWLY/Zwbci3ji9xNotzNCwU1cgoqXg1C"
     },
     {
       "name": "Reviewer05",
@@ -46,15 +46,15 @@
       "speciality": "Fullstack",
       "role": "senior",
       "email": "",
-      "password": ""
+      "password": "$2b$10$tzGeuxkZUziNU5k.n0a08uGA6pAzavnb4422IdOODtNd/XXOfZ1CG"
     },
     {
       "name": "Reviewer06",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$XAVazdPnyEMwXz5EKQ/r5eTCP0t8akSrEt6EHcLfecLOHO0u7UKu2"
     },
     {
       "name": "Reviewer07",
@@ -62,55 +62,55 @@
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$HGlFJOnUdX176QLlHi1gsuRjr25u9PeEsc.xAlc0FTc.X55RfDz9S"
     },
     {
       "name": "Reviewer08",
-      "load": 1,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$jeqmaJH1NBJayGaT5CV7auRZTymP1cbjHrqa/P1GVLy.id7HRpE6i"
     },
     {
       "name": "Reviewer09",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$m6rYelyYF9MD6E9bd1Pl3.2eBAMbqrRGj6gyN9CpBofxJhJJJ.jky"
     },
     {
       "name": "Reviewer10",
-      "load": 0,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$yPdK8adqMqriPzvFsRk2PuposNwF.p5DGiYeq1uwJNi66RZnbK3o6"
     },
     {
       "name": "Reviewer11",
-      "load": 0,
+      "load": 1,
       "speciality": "Frontend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$Lh5Pu1bGgEZ7jFTm6OoBdOjxR0k3llsehJf5d.tV1/0b8RW6QycOC"
     },
     {
       "name": "Reviewer12",
-      "load": 0,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$BVO3gH08rtqjUBH/XdeAdO3Z/vrVDjnq71T/Ar5SnCgWgXQH6ERj."
     },
     {
       "name": "Reviewer13",
-      "load": 0,
+      "load": 1,
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$Q53HT1HYH4uJrLKxU2g.9ONX0IeCXLK1g5.2eCdkrfPHfs864K7Z."
     },
     {
       "name": "Reviewer14",
@@ -118,7 +118,7 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$.DlJm/eg9sS4siFmkGLhyu9NHPIcdfecX7/Bs8VbOFIrtwI/AdjbO"
     },
     {
       "name": "Reviewer15",
@@ -126,23 +126,31 @@
       "speciality": "Backend",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$nzj67Af46NsFqPijaRe1g.jFDyD9dWUfr0RLx32Okh3YkXSKbTmCy"
     },
     {
       "name": "Reviewer16",
-      "load": 0,
+      "load": 2,
       "speciality": "Fullstack",
       "role": "reviewer",
       "email": "",
-      "password": ""
+      "password": "$2b$10$keFtvUISky301V873/arTuYQ8RLDmr7/OATq948dUZ2dMpkhHALM6"
     },
     {
       "name": "ScrumMaster",
       "load": 0,
       "speciality": "None",
-      "role": "scrum_master",
+      "role": "admin",
       "email": "",
-      "password": ""
+      "password": "$2b$10$Hv5G5svW1toaPnP2j.pEOO0sXs8oL5BHQzydedwG.ObeLu1r0DHYa"
+    },
+    {
+      "name": "Reviewer17",
+      "load": 1,
+      "speciality": "Frontend",
+      "role": "reviewer",
+      "email": "",
+      "password": "$2b$10$UeDMwqr3j/NPj2VBud7pxeMP7Ac92iL803.s8/OnBei/sMuJBYT0."
     }
   ],
   "reviews": [
@@ -152,28 +160,450 @@
       "merger": "Reviewer03",
       "reviewers": [
         {
+          "reviewId": "REV-26",
           "name": "Reviewer05",
           "status": "pending",
-          "notified": false
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
         },
         {
-          "name": "Reviewer07",
+          "reviewId": "REV-26",
+          "name": "Reviewer03",
           "status": "pending",
-          "notified": false
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
         },
         {
+          "reviewId": "REV-26",
           "name": "Reviewer08",
           "status": "pending",
-          "notified": false
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
         }
       ],
+      "comments": []
+    },
+    {
+      "id": "REV-25",
+      "branch": "bugfix/layout-shift-prevention",
+      "merger": "Reviewer01",
       "approvalCount": 0,
       "status": "in_review",
       "priority": "mid",
-      "reviewType": "fullstack",
-      "createdAt": "2026-05-18T12:58:41.219Z",
-      "updatedAt": "2026-05-18T12:58:41.219Z",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-28T12:12:00.000Z",
+      "updatedAt": "2026-05-28T12:12:00.000Z",
       "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-25",
+          "name": "Reviewer11",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-25",
+          "name": "Reviewer16",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-25",
+          "name": "Reviewer17",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-24",
+      "branch": "docs/update-migration-documentation-to-reflect-current-code-style",
+      "merger": "Reviewer03",
+      "approvalCount": 0,
+      "status": "fix_needed",
+      "priority": "mid",
+      "reviewType": "backend",
+      "createdAt": "2026-05-28T11:14:00.000Z",
+      "updatedAt": "2026-05-28T12:58:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-24",
+          "name": "Reviewer05",
+          "status": "disapproved",
+          "comment": "checkout the comment in the gitlab",
+          "notified": false,
+          "respondedAt": "2026-05-28T12:58:00.000Z"
+        },
+        {
+          "reviewId": "REV-24",
+          "name": "Reviewer04",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-24",
+          "name": "Reviewer13",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-23",
+      "branch": "feature/working-hours-frontend",
+      "merger": "Reviewer11",
+      "approvalCount": 0,
+      "status": "in_review",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-28T10:31:00.000Z",
+      "updatedAt": "2026-05-28T10:31:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-23",
+          "name": "Reviewer01",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-23",
+          "name": "Reviewer09",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-23",
+          "name": "Reviewer02",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-22",
+      "branch": "feature/system-notifications",
+      "merger": "Reviewer04",
+      "approvalCount": 0,
+      "status": "fix_needed",
+      "priority": "mid",
+      "reviewType": "backend",
+      "createdAt": "2026-05-28T08:44:00.000Z",
+      "updatedAt": "2026-05-28T10:35:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-22",
+          "name": "Reviewer05",
+          "status": "disapproved",
+          "comment": "check out gitlab for the comment",
+          "notified": false,
+          "respondedAt": "2026-05-28T10:35:00.000Z"
+        },
+        {
+          "reviewId": "REV-22",
+          "name": "Reviewer10",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-22",
+          "name": "Reviewer08",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-21",
+      "branch": "bugfix/fix-space-in-search-bar-empty-result",
+      "merger": "Reviewer02",
+      "approvalCount": 1,
+      "status": "in_review",
+      "priority": "mid",
+      "reviewType": "fullstack",
+      "createdAt": "2026-05-26T08:59:00.000Z",
+      "updatedAt": "2026-05-27T06:02:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-21",
+          "name": "Reviewer16",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-27T06:02:00.000Z"
+        },
+        {
+          "reviewId": "REV-21",
+          "name": "Reviewer12",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-21",
+          "name": "Reviewer03",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-20",
+      "branch": "fix/application-deadline-student-view-clean",
+      "merger": "Reviewer04",
+      "approvalCount": 3,
+      "status": "approved",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-26T08:43:00.000Z",
+      "updatedAt": "2026-05-26T11:20:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-20",
+          "name": "Reviewer05",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-26T11:15:00.000Z"
+        },
+        {
+          "reviewId": "REV-20",
+          "name": "Reviewer03",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-26T11:20:00.000Z"
+        },
+        {
+          "reviewId": "REV-20",
+          "name": "Reviewer08",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-26T10:37:00.000Z"
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-19",
+      "branch": "feature/varausapp-new-reservation-popup",
+      "merger": "Reviewer08",
+      "approvalCount": 3,
+      "status": "approved",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-25T11:30:00.000Z",
+      "updatedAt": "2026-05-28T07:18:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-19",
+          "name": "Reviewer01",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-27T11:49:00.000Z"
+        },
+        {
+          "reviewId": "REV-19",
+          "name": "Reviewer10",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-27T08:58:00.000Z"
+        },
+        {
+          "reviewId": "REV-19",
+          "name": "Reviewer09",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-28T07:17:00.000Z"
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-18",
+      "branch": "bugfix/biome-errors",
+      "merger": "Reviewer16",
+      "approvalCount": 3,
+      "status": "approved",
+      "priority": "imp",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-25T11:19:00.000Z",
+      "updatedAt": "2026-05-26T09:11:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-18",
+          "name": "Reviewer03",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-26T07:48:00.000Z"
+        },
+        {
+          "reviewId": "REV-18",
+          "name": "Reviewer02",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-26T09:11:00.000Z"
+        },
+        {
+          "reviewId": "REV-18",
+          "name": "Reviewer08",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-26T08:26:00.000Z"
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-17",
+      "branch": "fix/application-deadline-student-view",
+      "merger": "Reviewer04",
+      "approvalCount": 0,
+      "status": "fix_needed",
+      "priority": "mid",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-24T12:41:00.000Z",
+      "updatedAt": "2026-05-25T14:59:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-17",
+          "name": "Reviewer06",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        },
+        {
+          "reviewId": "REV-17",
+          "name": "Reviewer05",
+          "status": "disapproved",
+          "comment": "You still have the contents of your project tags branch in the new merge requests. If you have an issue with creating a new branch from the dev branch, come up to me in the office, I will help you. Otherwise LGTM.",
+          "notified": false,
+          "respondedAt": "2026-05-25T14:59:00.000Z"
+        },
+        {
+          "reviewId": "REV-17",
+          "name": "Reviewer07",
+          "status": "pending",
+          "comment": "",
+          "notified": false,
+          "respondedAt": null
+        }
+      ],
+      "comments": []
+    },
+    {
+      "id": "REV-16",
+      "branch": "bugfix/fix-bio-line-breaks-align-headlines-and-implement-the-hover-effect-on-user-information-cards-increased-width-of-some-pages-with-the-headings",
+      "merger": "Reviewer17",
+      "approvalCount": 3,
+      "status": "approved",
+      "priority": "low",
+      "reviewType": "frontend",
+      "createdAt": "2026-05-22T09:25:00.000Z",
+      "updatedAt": "2026-05-25T11:21:00.000Z",
+      "escalation": null,
+      "deletedBy": null,
+      "deletedAt": null,
+      "commitRef": "",
+      "reviewers": [
+        {
+          "reviewId": "REV-16",
+          "name": "Reviewer01",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-25T11:20:00.000Z"
+        },
+        {
+          "reviewId": "REV-16",
+          "name": "Reviewer03",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-25T06:58:00.000Z"
+        },
+        {
+          "reviewId": "REV-16",
+          "name": "Reviewer02",
+          "status": "approved",
+          "comment": "",
+          "notified": false,
+          "respondedAt": "2026-05-25T06:23:00.000Z"
+        }
+      ],
       "comments": []
     }
   ],

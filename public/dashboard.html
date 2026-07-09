@@ -23,12 +23,6 @@
         <span id="user-name"></span>
         <span id="user-role" class="role-badge"></span>
       </div>
-      <button id="change-pw-btn" class="btn btn-ghost" title="Change Password">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0110 0v4"/>
-        </svg>
-      </button>
       <button id="logout-btn" class="btn btn-ghost">Logout</button>
     </div>
   </header>
@@ -37,9 +31,12 @@
     <button class="tab-btn active" data-tab="new-review">New Review</button>
     <button class="tab-btn" data-tab="active-reviews">Active Reviews</button>
     <button class="tab-btn" data-tab="my-reviews">My Reviews</button>
+    <button class="tab-btn" data-tab="all-reviews">All Reviews</button>
     <button class="tab-btn" data-tab="reviewers">Reviewers</button>
     <button class="tab-btn" data-tab="history">History</button>
     <button class="tab-btn admin-only" data-tab="admin" style="display: none;">Admin</button>
+    <button class="tab-btn admin-only" data-tab="data" style="display: none;">Raw Data</button>
+    <button class="tab-btn admin-only" data-tab="debug" style="display: none;">Debug</button>
   </nav>
 
   <main class="app-main">
@@ -78,7 +75,6 @@
           <button type="submit" class="btn btn-primary">Create Review Request</button>
         </form>
       </div>
-
       <div id="created-review" class="card" style="display: none;">
         <h3>Review Created</h3>
         <div id="created-review-details"></div>
@@ -92,22 +88,12 @@
         <div class="table-wrapper">
           <table id="active-reviews-table">
             <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Merger</th>
-                <th>Reviewers</th>
-                <th>Approvals</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Status</th><th>Priority</th><th>Actions</th></tr>
             </thead>
             <tbody id="active-reviews-body"></tbody>
           </table>
         </div>
-        <div id="no-active-reviews" class="empty-state" style="display: none;">
-          <p>No active reviews</p>
-        </div>
+        <div id="no-active-reviews" class="empty-state" style="display: none;"><p>No active reviews</p></div>
       </div>
     </section>
 
@@ -117,22 +103,27 @@
         <div class="table-wrapper">
           <table id="my-reviews-table">
             <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Role</th>
-                <th>Reviewers</th>
-                <th>Approvals</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Actions</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Role</th><th>Reviewers</th><th>Approvals</th><th>Status</th><th>Priority</th><th>Actions</th></tr>
             </thead>
             <tbody id="my-reviews-body"></tbody>
           </table>
         </div>
-        <div id="no-my-reviews" class="empty-state" style="display: none;">
-          <p>No reviews assigned to you</p>
+        <div id="no-my-reviews" class="empty-state" style="display: none;"><p>No reviews assigned to you</p></div>
+      </div>
+    </section>
+
+    <section id="tab-all-reviews" class="tab-content">
+      <div class="card full-width">
+        <h2>All Reviews <span id="all-reviews-count" style="font-size:0.875rem;color:var(--text-muted);font-weight:normal;"></span></h2>
+        <div class="table-wrapper">
+          <table id="all-reviews-table">
+            <thead>
+              <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Priority</th><th>Size</th><th>Status</th><th>Created</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="all-reviews-body"></tbody>
+          </table>
         </div>
+        <div id="no-all-reviews" class="empty-state" style="display:none;"><p>No reviews found</p></div>
       </div>
     </section>
 
@@ -142,13 +133,7 @@
         <div class="table-wrapper">
           <table id="reviewers-table">
             <thead>
-              <tr>
-                <th>Name</th>
-                <th>Speciality</th>
-                <th>Role</th>
-                <th>Current Load</th>
-                <th>Capacity</th>
-              </tr>
+              <tr><th>Name</th><th>Speciality</th><th>Role</th><th>Current Load</th><th>Capacity</th><th>Actions</th></tr>
             </thead>
             <tbody id="reviewers-body"></tbody>
           </table>
@@ -158,31 +143,69 @@
 
     <section id="tab-history" class="tab-content">
       <div class="card full-width">
-        <h2>Review History (Last 30 Days)</h2>
+        <h2>Review History</h2>
         <div class="table-wrapper">
           <table id="history-table">
             <thead>
-              <tr>
-                <th>Branch</th>
-                <th>Merger</th>
-                <th>Reviewers</th>
-                <th>Result</th>
-                <th>Priority</th>
-                <th>Created</th>
-              </tr>
+              <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Result</th><th>Priority</th><th>Created</th><th>Actions</th></tr>
             </thead>
             <tbody id="history-body"></tbody>
           </table>
         </div>
-        <div id="no-history" class="empty-state" style="display: none;">
-          <p>No review history in the last 30 days</p>
-        </div>
+        <div id="no-history" class="empty-state" style="display: none;"><p>No review history</p></div>
       </div>
     </section>
 
     <section id="tab-admin" class="tab-content">
-      <div class="card">
+      <div class="card full-width">
         <h2>Admin Panel</h2>
+
+        <div class="admin-section" id="admin-season-groups">
+          <h3>New Season Group</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
+            Creates a new Google Sheets tab for the upcoming season's merge requests.
+            Next name: <strong id="next-group-name">...</strong>
+          </p>
+          <div class="form-row" style="gap:0.5rem;">
+            <button class="btn btn-primary" onclick="createNewGroup()">Create New Group</button>
+            <button class="btn btn-ghost" onclick="loadNextGroupName()">Refresh Name</button>
+          </div>
+          <div id="group-result" style="margin-top:0.75rem;"></div>
+        </div>
+
+        <div class="admin-section" id="admin-sync">
+          <h3>Sync Discord Approvals</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
+            Updates the "Discord Approvals" column (U) in the Merge Requests tab
+            with approval data from the review system.
+          </p>
+          <button class="btn btn-primary" onclick="syncDiscordApprovals()">Sync Now</button>
+          <div id="sync-result" style="margin-top:0.75rem;"></div>
+        </div>
+
+        <div class="admin-section" id="admin-gitlab">
+          <h3>GitLab Integration</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
+            Configure GitLab to auto-sync MRs and auto-close reviews when MRs are merged.
+          </p>
+          <div class="form-group">
+            <label>GitLab URL</label>
+            <input type="text" id="gitlab-url" placeholder="https://gitlab.example.com" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+          </div>
+          <div class="form-group" style="margin-top:0.5rem;">
+            <label>GitLab Token (private)</label>
+            <input type="password" id="gitlab-token" placeholder="glpat-xxxx" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+          </div>
+          <div class="form-group" style="margin-top:0.5rem;">
+            <label>Project Path (e.g. group/project)</label>
+            <input type="text" id="gitlab-project" placeholder="mygroup/myproject" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+          </div>
+          <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="saveGitLabSettings()">Save GitLab Settings</button>
+            <button class="btn btn-ghost" onclick="loadGitLabSettings()">Refresh</button>
+          </div>
+          <div id="gitlab-result" style="margin-top:0.75rem;"></div>
+        </div>
 
         <div class="admin-section" id="admin-manage-roles">
           <h3>Change Role</h3>
@@ -207,146 +230,136 @@
           </form>
         </div>
 
-        <div class="admin-section" id="admin-add-reviewer">
-          <h3>Add User</h3>
-          <form id="add-reviewer-form">
+        <div class="admin-section" id="admin-manage-load">
+          <h3>Set Reviewer Load</h3>
+          <form id="load-form">
             <div class="form-row">
               <div class="form-group">
-                <label for="add-name">Name *</label>
-                <input type="text" id="add-name" required>
+                <label for="load-user-select">User</label>
+                <select id="load-user-select" required></select>
               </div>
               <div class="form-group">
-                <label for="add-speciality">Speciality</label>
-                <select id="add-speciality">
-                  <option value="Fullstack">Fullstack</option>
-                  <option value="Frontend">Frontend</option>
-                  <option value="Backend">Backend</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="add-role">Role</label>
-                <select id="add-role">
-                  <option value="reviewer">Reviewer</option>
-                  <option value="senior">Senior Reviewer</option>
-                  <option value="scrum_master">Scrum Master</option>
-                  <option value="manager">Manager</option>
-                </select>
+                <label for="load-input">Load</label>
+                <input type="number" id="load-input" min="0" max="999" value="0" required>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary">Add User</button>
-          </form>
-        </div>
-
-        <div class="admin-section" id="admin-delete-review">
-          <h3>Delete Review</h3>
-          <form id="delete-review-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="delete-review-select">Select Review</label>
-                <select id="delete-review-select" required></select>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-danger">Delete Review</button>
+            <button type="submit" class="btn btn-primary">Set Load</button>
           </form>
         </div>
 
         <div class="admin-section" id="admin-passwords">
           <h3>Password Management</h3>
-
-          <div class="form-row" style="margin-bottom: 1rem;">
+          <div class="table-wrapper" style="margin-bottom: 1.5rem;">
+            <table id="admin-passwords-table">
+              <thead><tr><th>Name</th><th>Role</th><th>Password</th><th>Discord</th><th>Actions</th></tr></thead>
+              <tbody id="admin-passwords-body"></tbody>
+            </table>
+          </div>
+          <div class="form-row">
             <div class="form-group">
               <label for="pw-user-select">Select User</label>
               <select id="pw-user-select"></select>
             </div>
           </div>
-
-          <div class="form-row" style="align-items: end;">
+          <div class="form-row" style="margin-top: 0.5rem; align-items: end;">
             <div class="form-group">
               <label for="pw-set-input">Set Password</label>
               <input type="text" id="pw-set-input" placeholder="New password">
             </div>
             <button type="button" class="btn btn-primary" onclick="adminSetPassword()">Set</button>
-            <button type="button" class="btn btn-warning" onclick="adminResetPassword()">Generate OTP</button>
-            <button type="button" class="btn btn-secondary" onclick="adminGenerateLink()">Generate Link</button>
+            <button type="button" class="btn btn-warning" onclick="adminResetPassword()">Generate New</button>
           </div>
-
           <div id="pw-result" class="success-msg" style="display: none; margin-top: 0.75rem;"></div>
         </div>
+      </div>
+    </section>
 
-        <div class="admin-section" id="admin-emails">
-          <h3>Email Management</h3>
-          <form id="email-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="email-user-select">User</label>
-                <select id="email-user-select" required></select>
-              </div>
-              <div class="form-group">
-                <label for="email-input">Email Address</label>
-                <input type="email" id="email-input" placeholder="user@company.com">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Email</button>
-          </form>
+    <section id="tab-data" class="tab-content">
+      <div class="card full-width">
+        <h2>Raw Data</h2>
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">Current server data.json — read-only. Use for debugging.</p>
+        <pre id="raw-data-view" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;font-size:0.75rem;max-height:500px;overflow:auto;white-space:pre-wrap;color:var(--text);"></pre>
+        <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+          <button class="btn btn-sm btn-primary" onclick="loadRawData()">Refresh</button>
+          <button class="btn btn-sm btn-ghost" onclick="copyRawData()">📋 Copy</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-debug" class="tab-content">
+      <div class="card full-width">
+        <h2>Debug Console</h2>
+
+        <div class="debug-section">
+          <h3>Log Viewer</h3>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+            <label>Lines:</label>
+            <select id="debug-log-lines" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="debugLoadLogs()">Refresh</button>
+            <button class="btn btn-sm btn-ghost" onclick="debugClearLogs()">Clear</button>
+          </div>
+          <pre id="debug-log-view" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:300px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
         </div>
 
-        <div class="admin-section" id="admin-password-status">
-          <h3>Password Status</h3>
-          <div class="table-wrapper">
-            <table id="password-status-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Password Set</th>
-                  <th>Email</th>
-                </tr>
-              </thead>
-              <tbody id="password-status-body"></tbody>
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Database Browser</h3>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+            <label>Table:</label>
+            <select id="debug-table-select" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;" onchange="debugLoadTable()">
+              <option value="">— Select —</option>
+            </select>
+            <span id="debug-table-info" style="font-size:0.75rem;color:var(--text-muted);"></span>
+          </div>
+          <div class="table-wrapper" style="max-height:400px;overflow:auto;">
+            <table id="debug-table-view" style="font-size:0.75rem;">
+              <thead id="debug-table-head"></thead>
+              <tbody id="debug-table-body"></tbody>
             </table>
           </div>
+          <div id="debug-table-empty" class="empty-state" style="display:none;"><p>Select a table to browse</p></div>
         </div>
 
-        <div class="admin-section" id="admin-csv-import">
-          <h3>Import CSV</h3>
-          <form id="csv-import-form">
-            <div class="form-group">
-              <label for="csv-file">Upload CSV File</label>
-              <input type="file" id="csv-file" accept=".csv">
-            </div>
-            <p class="help-text">CSV format: "DevName","CurrentLoad","Speciality"</p>
-            <button type="submit" class="btn btn-secondary">Import & Replace</button>
-          </form>
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>SQL Console</h3>
+          <textarea id="debug-sql-input" placeholder="SELECT * FROM reviews LIMIT 10" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.625rem;color:var(--text);font-family:monospace;font-size:0.75rem;min-height:60px;resize:vertical;"></textarea>
+          <div style="margin-top:0.5rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-sm btn-primary" onclick="debugRunQuery()">Run</button>
+            <button class="btn btn-sm btn-ghost" onclick="document.getElementById('debug-sql-result').innerHTML=''">Clear</button>
+          </div>
+          <pre id="debug-sql-result" style="margin-top:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:300px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
         </div>
 
-        <div class="admin-section" id="admin-remove-user">
-          <h3>Remove User</h3>
-          <form id="remove-reviewer-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="remove-user-select">User to Remove</label>
-                <select id="remove-user-select" required></select>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-danger">Remove User</button>
-          </form>
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Sheets Inspector</h3>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
+            <label>Tab:</label>
+            <select id="debug-sheets-tab" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;">
+              <option value="Review Queue">Review Queue</option>
+              <option value="Merge Requests">Merge Requests</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="debugInspectSheets()">Inspect</button>
+          </div>
+          <div id="debug-sheets-result" style="font-size:0.75rem;color:var(--text-muted);">Click "Inspect" to see column mapping</div>
         </div>
 
-        <div class="admin-section" id="admin-settings">
-          <h3>Settings</h3>
-          <form id="settings-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="setting-reviewers">Reviewers per Request</label>
-                <input type="number" id="setting-reviewers" min="1" max="5" value="3">
-              </div>
-              <div class="form-group">
-                <label for="setting-max-load">Max Load per Reviewer</label>
-                <input type="number" id="setting-max-load" min="1" max="10" value="3">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Settings</button>
-          </form>
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Git Status</h3>
+          <button class="btn btn-sm btn-primary" onclick="debugGitStatus()">Check</button>
+          <pre id="debug-git-result" style="margin-top:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:200px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
+        </div>
+
+        <div class="debug-section" style="margin-top:1.5rem;">
+          <h3>Quick Actions</h3>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="debugTriggerSync()">Sync Discord Approvals</button>
+            <button class="btn btn-sm btn-primary" onclick="debugBulkSyncSheets()">Bulk Sync Review Queue</button>
+          </div>
+          <div id="debug-action-result" style="margin-top:0.5rem;"></div>
         </div>
       </div>
     </section>
@@ -363,31 +376,55 @@
     </div>
   </div>
 
-  <div id="change-pw-modal" class="modal" style="display: none;">
-    <div class="modal-backdrop" onclick="closeChangePwModal()"></div>
-    <div class="modal-content" style="max-width: 400px;">
+  <div id="edit-review-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="this.parentElement.style.display='none'"></div>
+    <div class="modal-content" style="max-width:700px;">
       <div class="modal-header">
-        <h3>Change Password</h3>
-        <button class="modal-close" onclick="closeChangePwModal()">&times;</button>
+        <h3 id="edit-modal-title">Edit Review</h3>
+        <button class="modal-close" onclick="document.getElementById('edit-review-modal').style.display='none'">&times;</button>
       </div>
-      <div style="padding: 1.5rem;">
-        <div id="change-pw-error" class="error-msg" style="display: none;"></div>
-        <div id="change-pw-success" class="success-msg" style="display: none;"></div>
-        <form id="change-pw-form">
-          <div class="form-group">
-            <label>Current Password</label>
-            <input type="password" id="current-pw" required>
+      <div id="edit-review-body" style="padding:1.5rem;"></div>
+    </div>
+  </div>
+
+  <div id="reviewer-modal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeReviewerModal()"></div>
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 id="reviewer-modal-title">Edit Reviewer</h3>
+        <button class="modal-close" onclick="closeReviewerModal()">&times;</button>
+      </div>
+      <div id="reviewer-modal-body" style="padding:1.5rem;">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="reviewer-edit-name" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);">
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label>Role</label><select id="reviewer-edit-role" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"><option value="reviewer">Reviewer</option><option value="senior">Senior</option><option value="scrum_master">Scrum Master</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div>
+          <div class="form-group"><label>Speciality</label><select id="reviewer-edit-speciality" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"><option value="frontend">Frontend</option><option value="backend">Backend</option><option value="fullstack">Fullstack</option><option value="None">None</option></select></div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label>Current Load</label><input type="number" id="reviewer-edit-load" min="0" max="999" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+          <div class="form-group"><label>Max Load</label><input type="number" id="reviewer-edit-maxload" min="1" max="20" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+        </div>
+        <div class="form-row" style="margin-top:0.75rem;">
+          <div class="form-group"><label>Weekly Count</label><input type="number" id="reviewer-edit-weekly" min="0" max="99" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+          <div class="form-group"><label>Max Weekly</label><input type="number" id="reviewer-edit-maxweekly" min="1" max="99" style="width:100%;padding:0.625rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);"></div>
+        </div>
+        <div class="form-group" style="margin-top:0.75rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+            <input type="checkbox" id="reviewer-edit-disabled" style="width:1.25rem;height:1.25rem;">
+            <span>Disabled (skip in review assignments)</span>
+          </label>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;justify-content:space-between;">
+          <button class="btn btn-danger" onclick="deleteReviewerFromModal()" style="background:#dc3545;color:#fff;border:none;">Delete User</button>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn btn-primary" onclick="saveReviewerEdit()">Save Changes</button>
+            <button class="btn btn-ghost" onclick="closeReviewerModal()">Cancel</button>
           </div>
-          <div class="form-group">
-            <label>New Password</label>
-            <input type="password" id="new-pw" required minlength="4">
-          </div>
-          <div class="form-group">
-            <label>Confirm New Password</label>
-            <input type="password" id="confirm-pw" required minlength="4">
-          </div>
-          <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1rem;">Change Password</button>
-        </form>
+        </div>
+        <div id="reviewer-modal-result" class="success-msg" style="display:none;margin-top:0.75rem;"></div>
       </div>
     </div>
   </div>

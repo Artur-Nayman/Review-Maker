@@ -3,4 +3,9 @@ node_modules/
 *.log
 .DS_Store
 teams-bot/
+*.db
+*.db-wal
+*.db-shm
+
+# App data (local changes, do not track)
 server/data.json

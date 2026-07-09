@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review Maker - Remote Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .setup-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .setup-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2rem; max-width: 480px; width: 90%; }
+    .setup-card h2 { margin-bottom: 1.5rem; color: #3b82f6; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: #94a3b8; }
+    .form-group input { width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 0.875rem; }
+    .form-group input:focus { outline: none; border-color: #3b82f6; }
+    .btn { padding: 0.625rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-warning { background: #f59e0b; color: #0f172a; }
+    .btn-ghost { background: transparent; color: #94a3b8; }
+    .btn-ghost:hover { color: #e2e8f0; }
+    .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+    .btn-full { width: 100%; }
+    .app-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: #1e293b; border-bottom: 1px solid #334155; }
+    .header-left { display: flex; align-items: center; gap: 0.75rem; }
+    .header-left h1 { font-size: 1.25rem; }
+    .header-right { display: flex; align-items: center; gap: 0.5rem; }
+    .user-badge { display: flex; align-items: center; gap: 0.5rem; }
+    .role-badge { padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+    .role-badge.admin { background: #dc2626; color: white; }
+    .role-badge.senior { background: #8b5cf6; color: white; }
+    .role-badge.manager { background: #059669; color: white; }
+    .role-badge.scrum_master { background: #0891b2; color: white; }
+    .role-badge.reviewer { background: #3b82f6; color: white; }
+    .tab-nav { display: flex; gap: 0.25rem; padding: 0 1.5rem; background: #1e293b; border-bottom: 1px solid #334155; overflow-x: auto; }
+    .tab-btn { padding: 0.75rem 1rem; background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.875rem; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+    .tab-content { display: none; padding: 1.5rem; }
+    .tab-content.active { display: block; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; max-width: 800px; }
+    .card h2 { margin-bottom: 1rem; font-size: 1.125rem; }
+    .card h3 { margin-bottom: 0.75rem; font-size: 1rem; color: #94a3b8; }
+    .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 200px; }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #334155; font-size: 0.875rem; }
+    th { color: #94a3b8; font-weight: 500; }
+    .status-badge { padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+    .status-badge.in_review { background: #3b82f6; color: white; }
+    .status-badge.fix_needed { background: #f59e0b; color: #0f172a; }
+    .status-badge.fix_made { background: #8b5cf6; color: white; }
+    .status-badge.approved { background: #10b981; color: white; }
+    .status-badge.rejected { background: #dc2626; color: white; }
+    .status-badge.escalated { background: #ef4444; color: white; }
+    .status-badge.deleted { background: #6b7280; color: white; }
+    .priority-badge { padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+    .priority-badge.imp { background: #dc2626; color: white; }
+    .priority-badge.mid { background: #f59e0b; color: #0f172a; }
+    .priority-badge.low { background: #10b981; color: white; }
+    .reviewer-status { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin: 0.125rem; }
+    .reviewer-status.approved { background: #10b981; color: white; }
+    .reviewer-status.disapproved { background: #dc2626; color: white; }
+    .reviewer-status.pending { background: #f59e0b; color: #0f172a; }
+    .load-bar { display: flex; align-items: center; gap: 0.25rem; }
+    .load-dot { width: 12px; height: 12px; border-radius: 50%; background: #334155; }
+    .load-dot.filled { background: #10b981; }
+    .load-dot.warn { background: #f59e0b; }
+    .load-dot.full { background: #dc2626; }
+    .load-text { font-size: 0.75rem; color: #94a3b8; margin-left: 0.5rem; }
+    .success-msg { background: #065f46; color: #6ee7b7; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+    .error-msg { background: #7f1d1d; color: #fca5a5; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+    .warning-banner { background: #78350f; color: #fcd34d; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; display: none; }
+    .admin-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #334155; }
+    .admin-section:last-child { border-bottom: none; }
+    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .modal-backdrop { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); }
+    .modal-content { position: relative; background: #1e293b; border: 1px solid #334155; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid #334155; }
+    .modal-close { background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; }
+    .review-detail-row { display: flex; padding: 0.5rem 0; border-bottom: 1px solid #334155; }
+    .review-detail-label { width: 120px; color: #94a3b8; font-size: 0.875rem; }
+    .review-detail-value { flex: 1; font-size: 0.875rem; }
+    .action-bar { display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #334155; }
+    .comment-item { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem; }
+    .comment-author { font-weight: 500; font-size: 0.875rem; }
+    .comment-text { font-size: 0.875rem; margin-top: 0.25rem; }
+    .comment-time { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+    .sync-indicator { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #64748b; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+    .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
+    .sync-dot.error { background: #dc2626; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    code { background: #0f172a; padding: 0.125rem 0.375rem; border-radius: 4px; font-size: 0.875rem; }
+    .help-text { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div id="setup-screen" class="setup-screen">
+    <div class="setup-card">
+      <h2>Review Maker - Remote Dashboard</h2>
+      <p style="color: #94a3b8; margin-bottom: 1.5rem; font-size: 0.875rem;">Connect to your GitHub repository to view and edit review data.</p>
+      <form id="setup-form">
+        <div class="form-group">
+          <label>GitHub Personal Access Token</label>
+          <input type="password" id="setup-token" placeholder="ghp_xxxxxxxxxxxx" required>
+          <p class="help-text">Token needs <code>repo</code> scope. Stored in localStorage.</p>
+        </div>
+        <div class="form-group">
+          <label>Repository (owner/repo)</label>
+          <input type="text" id="setup-repo" placeholder="anomalyco/review-maker" required>
+        </div>
+        <div class="form-group">
+          <label>Branch</label>
+          <input type="text" id="setup-branch" placeholder="discord-bot" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Connect</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-screen" style="display: none;">
+    <header class="app-header">
+      <div class="header-left">
+        <h1>Review Maker</h1>
+        <div class="sync-indicator">
+          <div id="sync-dot" class="sync-dot"></div>
+          <span id="sync-status">Connected</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="user-badge">
+          <span id="user-name"></span>
+          <span id="user-role" class="role-badge"></span>
+        </div>
+        <button id="logout-btn" class="btn btn-ghost">Disconnect</button>
+      </div>
+    </header>
+
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="active-reviews">Active Reviews</button>
+      <button class="tab-btn" data-tab="my-reviews">My Reviews</button>
+      <button class="tab-btn" data-tab="all-reviews">All Reviews</button>
+      <button class="tab-btn" data-tab="reviewers">Reviewers</button>
+      <button class="tab-btn" data-tab="history">History</button>
+      <button class="tab-btn admin-only" data-tab="admin" style="display: none;">Admin</button>
+      <button class="tab-btn admin-only" data-tab="data" style="display: none;">Data</button>
+    </nav>
+
+    <main>
+      <div id="warning-banner" class="warning-banner"></div>
+
+      <section id="tab-active-reviews" class="tab-content active">
+        <div class="card" style="max-width: 100%;">
+          <h2>Active Reviews</h2>
+          <div class="table-wrapper">
+            <table id="active-reviews-table">
+              <thead>
+                <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Status</th><th>Priority</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="active-reviews-body"></tbody>
+            </table>
+          </div>
+          <div id="no-active-reviews" style="padding: 2rem; text-align: center; color: #64748b; display: none;">No active reviews</div>
+        </div>
+      </section>
+
+      <section id="tab-my-reviews" class="tab-content">
+        <div class="card" style="max-width: 100%;">
+          <h2>My Reviews</h2>
+          <div class="table-wrapper">
+            <table id="my-reviews-table">
+              <thead>
+                <tr><th>ID</th><th>Branch</th><th>Role</th><th>Reviewers</th><th>Approvals</th><th>Status</th><th>Priority</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="my-reviews-body"></tbody>
+            </table>
+          </div>
+          <div id="no-my-reviews" style="padding: 2rem; text-align: center; color: #64748b; display: none;">No reviews assigned to you</div>
+        </div>
+      </section>
+
+      <section id="tab-all-reviews" class="tab-content">
+        <div class="card" style="max-width: 100%;">
+          <h2>All Reviews <span id="all-reviews-count" style="font-size: 0.875rem; color: #64748b; font-weight: normal;"></span></h2>
+          <div class="table-wrapper">
+            <table id="all-reviews-table">
+              <thead>
+                <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Approvals</th><th>Priority</th><th>Size</th><th>Status</th><th>Created</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="all-reviews-body"></tbody>
+            </table>
+          </div>
+          <div id="no-all-reviews" style="padding: 2rem; text-align: center; color: #64748b; display: none;">No reviews found</div>
+        </div>
+      </section>
+
+      <section id="tab-reviewers" class="tab-content">
+        <div class="card" style="max-width: 100%;">
+          <h2>Reviewer Loads</h2>
+          <div class="table-wrapper">
+            <table id="reviewers-table">
+              <thead>
+                <tr><th>Name</th><th>Speciality</th><th>Role</th><th>Current Load</th><th>Capacity</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="reviewers-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-history" class="tab-content">
+        <div class="card" style="max-width: 100%;">
+          <h2>Review History</h2>
+          <div class="table-wrapper">
+            <table id="history-table">
+              <thead>
+                <tr><th>ID</th><th>Branch</th><th>Merger</th><th>Reviewers</th><th>Result</th><th>Priority</th><th>Created</th></tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+          <div id="no-history" style="padding: 2rem; text-align: center; color: #64748b; display: none;">No review history</div>
+        </div>
+      </section>
+
+      <section id="tab-admin" class="tab-content">
+        <div class="card" style="max-width: 100%;">
+          <h2>Admin Panel</h2>
+
+          <div class="admin-section" id="admin-manage-roles">
+            <h3>Change Role</h3>
+            <form id="role-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="role-user-select">User</label>
+                  <select id="role-user-select" required style="width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0;"></select>
+                </div>
+                <div class="form-group">
+                  <label for="role-select">New Role</label>
+                  <select id="role-select" required style="width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0;">
+                    <option value="reviewer">Reviewer</option>
+                    <option value="senior">Senior Reviewer</option>
+                    <option value="scrum_master">Scrum Master</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Update Role</button>
+            </form>
+          </div>
+
+          <div class="admin-section" id="admin-manage-load">
+            <h3>Set Reviewer Load</h3>
+            <form id="load-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="load-user-select">User</label>
+                  <select id="load-user-select" required style="width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0;"></select>
+                </div>
+                <div class="form-group">
+                  <label for="load-input">Load</label>
+                  <input type="number" id="load-input" min="0" max="999" value="0" required style="width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0;">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Set Load</button>
+            </form>
+          </div>
+
+          <div class="admin-section" id="admin-passwords">
+            <h3>Password Management</h3>
+            <div class="table-wrapper" style="margin-bottom: 1.5rem;">
+              <table id="admin-passwords-table">
+                <thead><tr><th>Name</th><th>Role</th><th>Password</th><th>Discord</th><th>Actions</th></tr></thead>
+                <tbody id="admin-passwords-body"></tbody>
+              </table>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="pw-user-select">Select User</label>
+                <select id="pw-user-select" style="width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0;"></select>
+              </div>
+            </div>
+            <div class="form-row" style="margin-top: 0.5rem; align-items: end;">
+              <div class="form-group">
+                <label for="pw-set-input">Set Password</label>
+                <input type="text" id="pw-set-input" placeholder="New password" style="width: 100%; padding: 0.625rem; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0;">
+              </div>
+              <button type="button" class="btn btn-primary" onclick="adminSetPassword()">Set</button>
+              <button type="button" class="btn btn-warning" onclick="adminResetPassword()">Generate New</button>
+            </div>
+            <div id="pw-result" class="success-msg" style="display: none; margin-top: 0.75rem;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-data" class="tab-content">
+        <div class="card" style="max-width: 100%;">
+          <h2>Raw Data</h2>
+          <p style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 0.75rem;">Current data.json contents — read-only view. Use this for debugging.</p>
+          <pre id="raw-json-view" style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 1rem; font-size: 0.75rem; max-height: 500px; overflow: auto; white-space: pre-wrap; color: #e2e8f0;"></pre>
+          <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary btn-sm" onclick="refreshRawData()">Refresh</button>
+            <button class="btn btn-sm btn-ghost" onclick="exportRawData()">📋 Copy to Clipboard</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="review-modal" class="modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeModal()"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title">Review Details</h3>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div id="modal-body" style="padding: 1.5rem;"></div>
+      </div>
+    </div>
+
+    <div id="reviewer-modal" class="modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeReviewerModal()"></div>
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h3 id="reviewer-modal-title">Edit Reviewer</h3>
+          <button class="modal-close" onclick="closeReviewerModal()">&times;</button>
+        </div>
+        <div id="reviewer-modal-body" style="padding: 1.5rem;">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="reviewer-edit-name" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+          </div>
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group">
+              <label>Role</label>
+              <select id="reviewer-edit-role" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+                <option value="reviewer">Reviewer</option>
+                <option value="senior">Senior</option>
+                <option value="scrum_master">Scrum Master</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Speciality</label>
+              <select id="reviewer-edit-speciality" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+                <option value="frontend">Frontend</option>
+                <option value="backend">Backend</option>
+                <option value="fullstack">Fullstack</option>
+                <option value="None">None</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group">
+              <label>Current Load</label>
+              <input type="number" id="reviewer-edit-load" min="0" max="999" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+            </div>
+            <div class="form-group">
+              <label>Max Load (simultaneous)</label>
+              <input type="number" id="reviewer-edit-maxload" min="1" max="20" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top: 0.75rem;">
+            <div class="form-group">
+              <label>Weekly Count</label>
+              <input type="number" id="reviewer-edit-weekly" min="0" max="99" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+            </div>
+            <div class="form-group">
+              <label>Max Weekly</label>
+              <input type="number" id="reviewer-edit-maxweekly" min="1" max="99" style="width:100%;padding:0.625rem;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;">
+            </div>
+          </div>
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="saveReviewerEdit()">Save Changes</button>
+            <button class="btn btn-ghost" onclick="closeReviewerModal()">Cancel</button>
+          </div>
+          <div id="reviewer-modal-result" class="success-msg" style="display: none; margin-top: 0.75rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let config = null;
+    let data = null;
+    let currentUser = null;
+    let fileSha = null;
+    let syncTimeout = null;
+
+    const API = {
+      async get() {
+        const { owner, repo, branch, token } = config;
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/server/data.json?ref=${branch}`;
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
+        if (!res.ok) throw new Error(`Failed to fetch data: ${res.status}`);
+        const json = await res.json();
+        fileSha = json.sha;
+        const decoded = atob(json.content);
+        return JSON.parse(decoded);
+      },
+
+      async save(commitMsg) {
+        const { owner, repo, branch, token } = config;
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/server/data.json`;
+        const content = btoa(JSON.stringify(data, null, 2));
+        setSyncStatus('syncing');
+
+        const body = { message: commitMsg, content, sha: fileSha, branch };
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (res.status === 409) {
+          showWarning('Data was updated by server. Re-fetching and retrying...');
+          data = await API.get();
+          body.sha = fileSha;
+          body.content = btoa(JSON.stringify(data, null, 2));
+          const retryRes = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (!retryRes.ok) {
+            const err = await retryRes.json();
+            setSyncStatus('error');
+            throw new Error(err.message || 'Failed to save after retry');
+          }
+          fileSha = (await retryRes.json()).content.sha;
+          showWarning('Data was updated by server, changes merged and saved.');
+          setTimeout(hideWarning, 5000);
+        } else if (!res.ok) {
+          const err = await res.json();
+          setSyncStatus('error');
+          throw new Error(err.message || 'Failed to save');
+        } else {
+          fileSha = (await res.json()).content.sha;
+        }
+
+        setSyncStatus('connected');
+      }
+    };
+
+    function setSyncStatus(status) {
+      const dot = document.getElementById('sync-dot');
+      const text = document.getElementById('sync-status');
+      dot.className = 'sync-dot';
+      if (status === 'syncing') { dot.classList.add('syncing'); text.textContent = 'Syncing...'; }
+      else if (status === 'error') { dot.classList.add('error'); text.textContent = 'Sync error'; }
+      else { text.textContent = 'Connected'; }
+    }
+
+    function showWarning(msg) {
+      const banner = document.getElementById('warning-banner');
+      banner.textContent = msg;
+      banner.style.display = 'block';
+    }
+
+    function hideWarning() {
+      document.getElementById('warning-banner').style.display = 'none';
+    }
+
+    async function loadData() {
+      setSyncStatus('syncing');
+      try {
+        data = await API.get();
+        setSyncStatus('connected');
+        return data;
+      } catch (err) {
+        setSyncStatus('error');
+        alert('Failed to load data: ' + err.message);
+        throw err;
+      }
+    }
+
+    async function saveData(commitMsg) {
+      try {
+        await API.save(commitMsg);
+      } catch (err) {
+        alert('Failed to save: ' + err.message);
+        throw err;
+      }
+    }
+
+    document.getElementById('setup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = document.getElementById('setup-token').value.trim();
+      const repo = document.getElementById('setup-repo').value.trim();
+      const branch = document.getElementById('setup-branch').value.trim();
+
+      if (!token || !repo || !branch) return;
+
+      const [owner, repoName] = repo.split('/');
+      if (!owner || !repoName) { alert('Invalid repo format. Use owner/repo'); return; }
+
+      config = { token, owner, repo: repoName, branch };
+      localStorage.setItem('reviewMakerRemote', JSON.stringify(config));
+
+      try {
+        await loadData();
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display = 'block';
+        initApp();
+      } catch (err) {
+        localStorage.removeItem('reviewMakerRemote');
+        config = null;
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('reviewMakerRemote');
+      config = null;
+      data = null;
+      currentUser = null;
+      document.getElementById('setup-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+    });
+
+    (async () => {
+      const saved = localStorage.getItem('reviewMakerRemote');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.token) document.getElementById('setup-token').value = parsed.token;
+          if (parsed.repo) document.getElementById('setup-repo').value = `${parsed.owner}/${parsed.repo}`;
+          if (parsed.branch) document.getElementById('setup-branch').value = parsed.branch;
+        } catch (e) { /* ignore */ }
+        config = JSON.parse(saved);
+        try {
+          await loadData();
+          document.getElementById('setup-screen').style.display = 'none';
+          document.getElementById('app-screen').style.display = 'block';
+          initApp();
+        } catch (err) {
+          localStorage.removeItem('reviewMakerRemote');
+          config = null;
+        }
+      }
+    })();
+
+    function initApp() {
+      currentUser = { name: 'Remote Admin', role: 'admin' };
+      document.getElementById('user-name').textContent = currentUser.name;
+      const roleBadge = document.getElementById('user-role');
+      roleBadge.textContent = 'admin';
+      roleBadge.className = 'role-badge admin';
+
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+
+      setupTabs();
+      loadReviews();
+      loadAllReviews();
+      loadReviewers();
+      loadAdminData();
+      refreshRawData();
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+          if (btn.dataset.tab === 'active-reviews') loadReviews();
+          if (btn.dataset.tab === 'my-reviews') loadMyReviews();
+          if (btn.dataset.tab === 'all-reviews') loadAllReviews();
+          if (btn.dataset.tab === 'reviewers') loadReviewers();
+          if (btn.dataset.tab === 'history') loadReviews();
+          if (btn.dataset.tab === 'data') refreshRawData();
+          if (btn.dataset.tab === 'admin') loadAdminData();
+        });
+      });
+    }
+
+    function formatStatus(s) {
+      const m = { in_review: 'In Review', fix_needed: 'Fix Needed', fix_made: 'Fix Made', escalated: 'Escalated', approved: 'Approved', rejected: 'Rejected', deleted: 'Deleted', pending: 'Pending' };
+      return m[s] || s;
+    }
+
+    async function loadReviews() {
+      await loadData();
+      const active = data.reviews.filter(r => ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status));
+      const history = data.reviews.filter(r => ['approved', 'rejected', 'deleted'].includes(r.status));
+
+      const tbody = document.getElementById('active-reviews-body');
+      const empty = document.getElementById('no-active-reviews');
+      tbody.innerHTML = '';
+      if (active.length === 0) { empty.style.display = 'block'; } else {
+        empty.style.display = 'none';
+        active.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><code>${r.id}</code></td><td><code>${r.branch}</code></td><td>${r.merger}</td><td>${r.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name} (${rv.status})</span>`).join(' ')}</td><td>${r.approvalCount}/${r.reviewers.length}</td><td><span class="status-badge ${r.status}">${formatStatus(r.status)}</span></td><td><span class="priority-badge ${r.priority}">${r.priority}</span></td><td><button class="btn btn-sm btn-primary" onclick="openReviewModal('${r.id}')">Details</button> <button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      const htbody = document.getElementById('history-body');
+      const hempty = document.getElementById('no-history');
+      htbody.innerHTML = '';
+      if (history.length === 0) { hempty.style.display = 'block'; } else {
+        hempty.style.display = 'none';
+        history.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><code>${r.id}</code></td><td><code>${r.branch}</code></td><td>${r.merger}</td><td>${r.reviewers.map(rv => rv.name).join(', ')}</td><td><span class="status-badge ${r.status}">${formatStatus(r.status)}</span></td><td><span class="priority-badge ${r.priority}">${r.priority}</span></td><td>${new Date(r.createdAt).toLocaleDateString()}</td><td><button class="btn btn-sm btn-primary" onclick="openReviewModal('${r.id}')">View</button></td>`;
+          htbody.appendChild(tr);
+        });
+      }
+    }
+
+    async function loadMyReviews() {
+      await loadData();
+      const active = data.reviews.filter(r => ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status));
+      const myReviews = active.filter(r => r.reviewers.some(rv => rv.name.toLowerCase() === currentUser.name.toLowerCase()));
+      const tbody = document.getElementById('my-reviews-body');
+      const empty = document.getElementById('no-my-reviews');
+      tbody.innerHTML = '';
+      if (myReviews.length === 0) { empty.style.display = 'block'; } else {
+        empty.style.display = 'none';
+        myReviews.forEach(r => {
+          const myReviewer = r.reviewers.find(rv => rv.name.toLowerCase() === currentUser.name.toLowerCase());
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><code>${r.id}</code></td><td><code>${r.branch}</code></td><td>Reviewer (${myReviewer?.status || 'unknown'})</td><td>${r.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name}</span>`).join(' ')}</td><td>${r.approvalCount}/${r.reviewers.length}</td><td><span class="status-badge ${r.status}">${formatStatus(r.status)}</span></td><td><span class="priority-badge ${r.priority}">${r.priority}</span></td><td><button class="btn btn-sm btn-primary" onclick="openReviewModal('${r.id}')">Details</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    async function loadAllReviews() {
+      await loadData();
+      const tbody = document.getElementById('all-reviews-body');
+      const empty = document.getElementById('no-all-reviews');
+      const countEl = document.getElementById('all-reviews-count');
+      tbody.innerHTML = '';
+      const sorted = [...data.reviews].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (sorted.length === 0) { empty.style.display = 'block'; countEl.textContent = ''; return; }
+      empty.style.display = 'none';
+      countEl.textContent = `(${sorted.length} total)`;
+      sorted.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${r.id}</code></td>
+          <td><code>${r.branch}</code></td>
+          <td>${r.merger}</td>
+          <td>${r.reviewers.map(rv => rv.name).join(', ')}</td>
+          <td>${r.approvalCount}/${r.reviewers.length}</td>
+          <td><span class="priority-badge ${r.priority}">${r.priority}</span></td>
+          <td><span style="font-size:0.75rem;color:#94a3b8">${r.size || '—'}</span></td>
+          <td>
+            <select onchange="updateReviewStatus('${r.id}', this.value)" style="background:#0f172a;border:1px solid #334155;border-radius:4px;color:#e2e8f0;padding:0.25rem;font-size:0.75rem;">
+              ${['pending','in_review','fix_needed','fix_made','escalated','approved','rejected','deleted'].map(s =>
+                `<option value="${s}" ${r.status === s ? 'selected' : ''}>${formatStatus(s)}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td style="font-size:0.75rem;color:#94a3b8">${new Date(r.createdAt).toLocaleDateString()}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="openReviewModal('${r.id}')">Details</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteReview('${r.id}')">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateReviewStatus(id, newStatus) {
+      await loadData();
+      const review = data.reviews.find(r => r.id === id);
+      if (!review) return;
+      review.status = newStatus;
+      await saveData(`Review ${id} status changed to ${newStatus} via dashboard`);
+      loadAllReviews();
+      loadReviews();
+    }
+
+    async function loadReviewers() {
+      await loadData();
+      const tbody = document.getElementById('reviewers-body');
+      tbody.innerHTML = '';
+      const maxLoad = data.settings.maxLoad || 3;
+      data.reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+        const isReviewable = r.role === 'reviewer' || r.role === 'senior';
+        const dots = isReviewable ? Array.from({ length: maxLoad }, (_, i) => {
+          let cls = 'load-dot';
+          if (i < r.load) { cls += ' filled'; if (r.load >= maxLoad) cls += ' full'; else if (r.load >= maxLoad - 1) cls += ' warn'; }
+          return `<div class="${cls}"></div>`;
+        }).join('') : '<span style="color: #64748b; font-size: 0.75rem;">N/A</span>';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${r.name}</strong></td><td>${r.speciality}</td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><div class="load-bar">${dots}${isReviewable ? `<span class="load-text">${r.load}/${maxLoad}</span>` : ''}</div></td><td>${!isReviewable ? '<span style="color: #64748b; font-size: 0.75rem;">Non-reviewer</span>' : (r.load >= maxLoad ? '<span class="status-badge pending">Full</span>' : '<span class="status-badge approved">Available</span>')}</td><td><button class="btn btn-sm btn-primary" onclick="openReviewerEdit('${r.name}')">Edit</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    let editingReviewerName = null;
+
+    function openReviewerEdit(name) {
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      editingReviewerName = name;
+      document.getElementById('reviewer-modal-title').textContent = `Edit: ${name}`;
+      document.getElementById('reviewer-edit-name').value = reviewer.name;
+      document.getElementById('reviewer-edit-role').value = reviewer.role;
+      document.getElementById('reviewer-edit-speciality').value = reviewer.speciality || 'None';
+      document.getElementById('reviewer-edit-load').value = reviewer.load || 0;
+      document.getElementById('reviewer-edit-maxload').value = reviewer.maxLoad || data.settings.maxLoad || 3;
+      document.getElementById('reviewer-edit-weekly').value = reviewer.weeklyCount || 0;
+      document.getElementById('reviewer-edit-maxweekly').value = reviewer.maxActiveReviews || data.settings.maxWeeklyReviews || 5;
+      document.getElementById('reviewer-modal-result').style.display = 'none';
+      document.getElementById('reviewer-modal').style.display = 'flex';
+    }
+
+    function closeReviewerModal() {
+      document.getElementById('reviewer-modal').style.display = 'none';
+      editingReviewerName = null;
+    }
+
+    async function saveReviewerEdit() {
+      const resultEl = document.getElementById('reviewer-modal-result');
+      const name = document.getElementById('reviewer-edit-name').value.trim();
+      if (!name) { resultEl.textContent = 'Name is required'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
+      const reviewer = data.reviewers.find(r => r.name === editingReviewerName);
+      if (!reviewer) return;
+      reviewer.name = name;
+      reviewer.role = document.getElementById('reviewer-edit-role').value;
+      reviewer.speciality = document.getElementById('reviewer-edit-speciality').value;
+      reviewer.load = parseInt(document.getElementById('reviewer-edit-load').value) || 0;
+      reviewer.maxLoad = parseInt(document.getElementById('reviewer-edit-maxload').value) || 3;
+      reviewer.weeklyCount = parseInt(document.getElementById('reviewer-edit-weekly').value) || 0;
+      reviewer.maxActiveReviews = parseInt(document.getElementById('reviewer-edit-maxweekly').value) || 5;
+      await saveData(`Reviewer ${editingReviewerName} updated from dashboard`);
+      resultEl.textContent = `Saved changes to ${editingReviewerName}`;
+      resultEl.className = 'success-msg';
+      resultEl.style.display = 'block';
+      loadReviewers();
+      loadAdminData();
+      setTimeout(closeReviewerModal, 1500);
+    }
+
+    async function openReviewModal(id) {
+      await loadData();
+      const review = data.reviews.find(r => r.id === id);
+      if (!review) return;
+      const modal = document.getElementById('review-modal');
+      document.getElementById('modal-title').textContent = review.branch;
+      const body = document.getElementById('modal-body');
+      const isActive = ['pending', 'in_review', 'fix_needed', 'fix_made', 'escalated'].includes(review.status);
+      body.innerHTML = `
+        <div class="review-detail-row"><span class="review-detail-label">ID</span><span class="review-detail-value"><code>${review.id}</code></span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Merger</span><span class="review-detail-value">${review.merger}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Type</span><span class="review-detail-value">${review.reviewType}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Priority</span><span class="review-detail-value"><span class="priority-badge ${review.priority}">${review.priority}</span></span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Status</span><span class="review-detail-value"><span class="status-badge ${review.status}">${formatStatus(review.status)}</span></span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Approvals</span><span class="review-detail-value">${review.approvalCount}/${review.reviewers.length}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Reviewers</span><span class="review-detail-value">${review.reviewers.map(rv => `<span class="reviewer-status ${rv.status}">${rv.name} (${rv.status})${rv.comment ? ': ' + rv.comment : ''}</span>`).join(' ')}</span></div>
+        <div class="review-detail-row"><span class="review-detail-label">Created</span><span class="review-detail-value">${new Date(review.createdAt).toLocaleString()}</span></div>
+        ${review.commits?.length ? `<div class="review-detail-row"><span class="review-detail-label">Commits</span><span class="review-detail-value"><code>${review.commits.join(', ')}</code></span></div>` : ''}
+        ${review.comments?.length ? `<h4 style="margin-top: 1rem;">Comments</h4>${review.comments.map(c => `<div class="comment-item"><div class="comment-author">${c.author}</div><div class="comment-text">${c.text}</div><div class="comment-time">${new Date(c.createdAt).toLocaleString()}</div></div>`).join('')}` : ''}
+        ${isActive ? `<div class="action-bar"><button class="btn btn-danger" onclick="deleteReview('${review.id}')">🗑 Delete Review</button></div>` : ''}
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('review-modal').style.display = 'none'; }
+
+    async function deleteReview(id) {
+      if (!confirm(`Delete review ${id}? This will set its status to "deleted".`)) return;
+      await loadData();
+      const review = data.reviews.find(r => r.id === id);
+      if (!review) { alert('Review not found'); return; }
+      review.status = 'deleted';
+      await saveData(`Review ${id} deleted from remote dashboard`);
+      alert(`Review ${id} deleted`);
+      closeModal();
+      loadReviews();
+      if (typeof loadAllReviews === 'function') loadAllReviews();
+    }
+
+    async function loadAdminData() {
+      await loadData();
+      const roleSelect = document.getElementById('role-user-select');
+      const loadSelect = document.getElementById('load-user-select');
+      const pwSelect = document.getElementById('pw-user-select');
+      [roleSelect, loadSelect, pwSelect].forEach(s => s.innerHTML = '');
+
+      data.reviewers.filter(r => r.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+        [roleSelect, loadSelect, pwSelect].forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = r.name;
+          opt.textContent = `${r.name} (${r.role})`;
+          s.appendChild(opt);
+        });
+      });
+
+      loadSelect.addEventListener('change', () => {
+        const selected = data.reviewers.find(r => r.name === loadSelect.value);
+        if (selected) document.getElementById('load-input').value = selected.load;
+      });
+      loadSelect.dispatchEvent(new Event('change'));
+
+      const pwBody = document.getElementById('admin-passwords-body');
+      pwBody.innerHTML = '';
+      data.reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${r.name}</strong></td><td><span class="role-badge ${r.role}">${r.role.replace('_', ' ')}</span></td><td><button class="btn btn-sm btn-warning" onclick="adminResetPasswordByName('${r.name}')">Reset</button></td>`;
+        pwBody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('role-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('role-user-select').value;
+      const role = document.getElementById('role-select').value;
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      if (role === 'senior') {
+        const currentSenior = data.reviewers.find(r => r.role === 'senior');
+        if (currentSenior && currentSenior.name !== name) currentSenior.role = 'reviewer';
+      }
+      if (['admin', 'manager', 'scrum_master'].includes(role)) reviewer.speciality = 'None';
+      reviewer.role = role;
+      await saveData(`Role changed for ${name} to ${role}`);
+      alert('Role updated');
+      loadAdminData();
+      loadReviewers();
+    });
+
+    document.getElementById('load-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('load-user-select').value;
+      const load = parseInt(document.getElementById('load-input').value);
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      reviewer.load = load;
+      await saveData(`Load set to ${load} for ${name}`);
+      alert(`Load set to ${load} for ${name}`);
+      loadAdminData();
+      loadReviewers();
+    });
+
+    async function adminSetPassword() {
+      const name = document.getElementById('pw-user-select').value;
+      const password = document.getElementById('pw-set-input').value.trim();
+      const resultEl = document.getElementById('pw-result');
+      if (!name || !password) { resultEl.textContent = 'Select a user and enter a password'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      reviewer.password = '$2b$hashed';
+      await saveData(`Password set for ${name}`);
+      resultEl.textContent = `Password set for ${name}`;
+      resultEl.className = 'success-msg';
+      resultEl.style.display = 'block';
+      document.getElementById('pw-set-input').value = '';
+      loadAdminData();
+    }
+
+    async function adminResetPassword() {
+      const name = document.getElementById('pw-user-select').value;
+      const resultEl = document.getElementById('pw-result');
+      if (!name) { resultEl.textContent = 'Select a user first'; resultEl.className = 'error-msg'; resultEl.style.display = 'block'; return; }
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let pw = ''; for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      reviewer.password = '$2b$hashed';
+      await saveData(`Password reset for ${name}`);
+      resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: #0f172a; padding: 0.25rem 0.5rem; border-radius: 4px;">${pw}</code>`;
+      resultEl.className = 'success-msg';
+      resultEl.style.display = 'block';
+      loadAdminData();
+    }
+
+    async function adminResetPasswordByName(name) {
+      const resultEl = document.getElementById('pw-result');
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let pw = ''; for (let i = 0; i < 12; i++) pw += chars[Math.floor(Math.random() * chars.length)];
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      reviewer.password = '$2b$hashed';
+      await saveData(`Password reset for ${name}`);
+      resultEl.innerHTML = `New password for <strong>${name}</strong>: <code style="font-size: 1.1rem; background: #0f172a; padding: 0.25rem 0.5rem; border-radius: 4px;">${pw}</code>`;
+      resultEl.className = 'success-msg';
+      resultEl.style.display = 'block';
+      loadAdminData();
+    }
+
+    async function unlinkDiscord(name) {
+      if (!confirm(`Remove Discord link for ${name}? They will need to use /link again.`)) return;
+      const reviewer = data.reviewers.find(r => r.name === name);
+      if (!reviewer) return;
+      reviewer.discordId = '';
+      await saveData(`Discord link removed for ${name}`);
+      alert(`Discord link removed for ${name}`);
+      loadAdminData();
+    }
+
+    async function refreshRawData() {
+      try {
+        await loadData();
+        const el = document.getElementById('raw-json-view');
+        el.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById('raw-json-view').textContent = 'Error loading data: ' + e.message;
+      }
+    }
+
+    function exportRawData() {
+      const text = document.getElementById('raw-json-view').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Raw data copied to clipboard');
+      }).catch(() => {
+        alert('Failed to copy — select and copy manually');
+      });
+    }
+  </script>
+</body>
+</html>
