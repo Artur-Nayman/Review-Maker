@@ -659,17 +659,12 @@ async function handleCleanupButton(interaction) {
     entry.status = 'leaving';
     entry.respondedAt = new Date().toISOString();
     const reassignedCount = reassignReviewsAndClearLoad(data, reviewer.name);
-    // Fully unlink — same as /leave
-    reviewer.disabled = true;
-    reviewer.discordId = '';
-    reviewer.load = 0;
-    reviewer.weeklyCount = 0;
-    reviewer.maxLoad = 0;
-    reviewer.maxActiveReviews = 0;
-    saveData(data, `${reviewer.name} marked as leaving via cleanup campaign (${reassignedCount} reviews reassigned)`);
+    // Delete reviewer completely
+    data.reviewers = data.reviewers.filter(r => r.name !== reviewer.name);
+    saveData(data, `${reviewer.name} removed via cleanup campaign (${reassignedCount} reviews reassigned)`);
     saveCleanupData(cleanup);
     return interaction.reply({
-      content: `You've been marked as leaving. Your account has been fully unlinked. ${reassignedCount > 0 ? `${reassignedCount} review(s) were reassigned.` : ''} Use \`/link\` to re-register if this was a mistake.`,
+      content: `You've been removed from the reviewer list. ${reassignedCount > 0 ? `${reassignedCount} review(s) were reassigned.` : ''} Use \`/link\` to re-register if this was a mistake.`,
       ephemeral: true
     });
   }
@@ -738,13 +733,8 @@ function startCleanupChecker() {
         if (entry.status === 'pending' && Date.now() - campaignStart >= sevenDays) {
           const reviewer = data.reviewers.find(r => r.name === entry.name);
           if (reviewer) {
-            reviewer.disabled = true;
-            reviewer.discordId = '';
-            reviewer.load = 0;
-            reviewer.weeklyCount = 0;
-            reviewer.maxLoad = 0;
-            reviewer.maxActiveReviews = 0;
             const reassigned = reassignReviewsAndClearLoad(data, reviewer.name);
+            data.reviewers = data.reviewers.filter(r => r.name !== reviewer.name);
             entry.status = `auto_removed (${reassigned} reviews reassigned)`;
             changed = true;
           }
