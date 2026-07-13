@@ -32,7 +32,7 @@ module.exports = {
     };
 
     const discordStatus = `${statusEmoji[h.discord.status] || '⚪'} ${h.discord.status}`;
-    const sheetsStatus = `${statusEmoji[h.sheets.status] || '⚪'} ${h.sheets.status}`;
+    const sheetsStatus = '⚪ disabled';
     const dbStatus = `${statusEmoji[h.db.status] || '⚪'} ${h.db.status}`;
 
     const embed = new EmbedBuilder()
@@ -54,14 +54,6 @@ module.exports = {
         name: 'Last Discord Disconnect',
         value: `<t:${Math.floor(h.discord.lastDisconnect / 1000)}:R>`,
         inline: true
-      });
-    }
-
-    if (h.sheets.lastError) {
-      embed.addFields({
-        name: 'Sheets Error',
-        value: `\`${h.sheets.lastError.slice(0, 200)}\``,
-        inline: false
       });
     }
 

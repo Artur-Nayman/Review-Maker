@@ -350,15 +350,7 @@ function saveData(data, commitMsg) {
     throw e;
   }
 
-  try {
-    const hasReviews = (data.reviews || []).length > 0;
-    if (hasReviews) {
-      const { syncDiscordApprovals } = require('./discord-sync');
-      syncDiscordApprovals(data);
-    }
-  } catch (e) {
-    // Discord sync is best-effort
-  }
+  // ponytail: Google Sheets sync removed — OAuth token expired, not needed
 }
 
 function generateReviewId(data) {

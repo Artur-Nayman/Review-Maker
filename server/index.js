@@ -1136,14 +1136,6 @@ async function startServer() {
   await migratePasswords(data);
 
   try {
-    const { bulkSyncDiscordApprovals } = require('./discord-sync');
-    bulkSyncDiscordApprovals(data);
-    console.log('[DiscordSync] Initial sync complete');
-  } catch (e) {
-    console.log('[DiscordSync] Initial sync skipped:', e.message);
-  }
-
-  try {
     const { syncGitLabMRs } = require('./gitlab-sync');
     syncGitLabMRs();
     setInterval(() => syncGitLabMRs(), 5 * 60 * 1000);

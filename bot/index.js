@@ -55,7 +55,7 @@ const client = new Client({
 client.health = {
   startedAt: Date.now(),
   discord: { status: 'connecting', lastReady: null, lastDisconnect: null, ping: 0 },
-  sheets: { status: 'unknown', lastCheck: null, lastError: null },
+  sheets: { status: 'disabled', lastCheck: null, lastError: null },
   db: { status: 'unknown', lastCheck: null, lastError: null },
   git: { lastPull: null, lastPullResult: null }
 };
@@ -199,27 +199,6 @@ client.on('clientReady', async () => {
     process.exit(0);
   }, MS_WEEK);
 
-  async function checkGoogleSheets() {
-    try {
-      const resp = await fetch('https://sheets.googleapis.com/$discovery/rest?version=v4', {
-        signal: AbortSignal.timeout(10000)
-      });
-      if (resp.ok) {
-        client.health.sheets.status = 'ok';
-        client.health.sheets.lastCheck = Date.now();
-        client.health.sheets.lastError = null;
-        console.log('[Health] Google Sheets API: reachable');
-      } else {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-    } catch (err) {
-      client.health.sheets.status = 'error';
-      client.health.sheets.lastCheck = Date.now();
-      client.health.sheets.lastError = err.message;
-      console.error('[Health] Google Sheets API unreachable:', err.message);
-    }
-  }
-
   async function checkDatabase() {
     try {
       const db = require('../server/db');
@@ -241,9 +220,7 @@ client.on('clientReady', async () => {
     }
   }
 
-  checkGoogleSheets();
   checkDatabase();
-  setInterval(checkGoogleSheets, 30 * 60 * 1000);
   setInterval(checkDatabase, 30 * 60 * 1000);
   setInterval(() => { client.health.discord.ping = client.ws.ping; }, 60 * 1000);
 
