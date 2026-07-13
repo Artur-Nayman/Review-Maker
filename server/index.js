@@ -59,7 +59,8 @@ const passwordLimiter = rateLimit({
 // Data functions moved to db.js
 
 function getReviewerByName(data, name) {
-  return data.reviewers.find(r => r.name.toLowerCase() === name.toLowerCase());
+  if (!name) return undefined;  // ponytail: guard against undefined crashing toLowerCase
+  return data.reviewers.find(r => r.name && r.name.toLowerCase() === name.toLowerCase());
 }
 
 function isReviewableRole(role) {
