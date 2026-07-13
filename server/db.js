@@ -2,11 +2,6 @@ const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 
-const HARDCODED_ADMIN_DISCORD_IDS = [
-  '424105820385705984', // Artur Nayman
-  '341280133107286017'  // Minna Arponen
-];
-
 const DB_PATH = process.env.TEST_DB_PATH || path.join(__dirname, 'reviewmaker.db');
 const DATA_PATH = process.env.TEST_DATA_PATH || path.join(__dirname, 'data.json');
 const NUMERIC_SETTINGS = ['nextReviewNumber', 'maxLoad', 'reviewersPerRequest'];
@@ -277,23 +272,40 @@ function loadData() {
   return { reviewers, reviews, settings };
 }
 
+// ponytail: name mapping for unlinking-resilient bootstrap
+const HARDCODED_ADMINS = [
+  { discordId: '424105820385705984', names: ['Artur Nayman', 'Artur', 'artur', 'Artur Nayman (default)'] },
+  { discordId: '341280133107286017', names: ['Minna', 'Minna Arponen', 'minna'] },
+];
+
 function bootstrapAdmins() {
   ensureInit();
   const data = loadData();
   let changed = false;
 
-  for (const discordId of HARDCODED_ADMIN_DISCORD_IDS) {
-    const reviewer = data.reviewers.find(r => r.discordId === discordId);
+  for (const admin of HARDCODED_ADMINS) {
+    let reviewer = data.reviewers.find(r => r.discordId === admin.discordId);
+
+    if (!reviewer) {
+      // Not linked yet — try to find by name and auto-link
+      reviewer = data.reviewers.find(r => admin.names.includes(r.name));
+      if (reviewer) {
+        reviewer.discordId = admin.discordId;
+        changed = true;
+        console.log(`[Bootstrap] Auto-linked ${reviewer.name} to Discord ID ${admin.discordId}`);
+      }
+    }
+
     if (reviewer && reviewer.role !== 'admin') {
       reviewer.role = 'admin';
       changed = true;
-      console.log(`[Bootstrap] Restored admin role for Discord ID ${discordId} (${reviewer.name})`);
+      console.log(`[Bootstrap] Restored admin role for ${reviewer.name} (${admin.discordId})`);
     }
   }
 
   if (changed) {
-    saveData(data, 'Admin bootstrap: restored admin roles for hardcoded Discord IDs');
-    console.log('[Bootstrap] Admin roles restored');
+    saveData(data, 'Admin bootstrap: restored admin roles and links');
+    console.log('[Bootstrap] Admin bootstrap complete');
   }
 }
 
