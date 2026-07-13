@@ -1,7 +1,8 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const bcrypt = require('bcryptjs');
 const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity, findReviewById } = require('../utils/data');
 const { createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
+const { loadCleanupData, saveCleanupData } = require('../../server/db');
 const { exec } = require('child_process');
 const path = require('path');
 
@@ -39,6 +40,7 @@ module.exports = {
           { name: 'Scrum Master', value: 'scrum_master' },
           { name: 'Manager', value: 'manager' }
         ))
+        .addStringOption(opt => opt.setName('discordid').setDescription('Discord user ID (optional)'))
     )
     .addSubcommand(subcommand =>
       subcommand
@@ -146,6 +148,16 @@ module.exports = {
     )
     .addSubcommand(subcommand =>
       subcommand
+        .setName('cleanup')
+        .setDescription('Start a cleanup campaign — DM all reviewers to confirm activity')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('cleanup-status')
+        .setDescription('Show progress of the current cleanup campaign')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
         .setName('git-pull')
         .setDescription('Force git pull from dashboard-remote and restart on changes')
     ),
@@ -208,6 +220,7 @@ module.exports = {
         const name = interaction.options.getString('name');
         const speciality = interaction.options.getString('speciality') || 'Fullstack';
         const role = interaction.options.getString('role') || 'reviewer';
+        const discordId = interaction.options.getString('discordid') || '';
 
         if (getReviewerByName(data, name)) {
           return interaction.reply({ embeds: [createErrorEmbed('User already exists')], ephemeral: true });
@@ -229,7 +242,7 @@ module.exports = {
           role,
           email: '',
           password: await bcrypt.hash(generatedPassword, 10),
-          discordId: ''
+          discordId
         });
 
         saveData(data, "Bot admin action");
@@ -613,6 +626,14 @@ module.exports = {
         });
       }
 
+      case 'cleanup': {
+        return handleCleanup(interaction, data, user);
+      }
+
+      case 'cleanup-status': {
+        return handleCleanupStatus(interaction);
+      }
+
       case 'git-pull': {
         await interaction.deferReply({ ephemeral: true });
         try {
@@ -638,3 +659,75 @@ module.exports = {
     }
   }
 };
+
+async function handleCleanup(interaction, data, adminUser) {
+  const linkedReviewers = data.reviewers.filter(r => r.discordId && !r.disabled && r.role !== 'admin');
+
+  if (linkedReviewers.length === 0) {
+    return interaction.reply({ embeds: [createErrorEmbed('No linked active reviewers to contact')], ephemeral: true });
+  }
+
+  const cleanup = loadCleanupData();
+  const campaign = {
+    id: `campaign-${Date.now()}`,
+    startedAt: new Date().toISOString(),
+    startedBy: adminUser.name,
+    entries: linkedReviewers.map(r => ({
+      name: r.name,
+      discordId: r.discordId,
+      status: 'pending'
+    }))
+  };
+
+  cleanup.campaigns.push(campaign);
+  saveCleanupData(cleanup);
+
+  const respondRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('cleanup-respond')
+      .setLabel('📋 Respond to Cleanup')
+      .setStyle(ButtonStyle.Primary)
+  );
+
+  // reply() is always public — the only reliable way
+  await interaction.reply({
+    content: `📋 **Reviewer Cleanup**\n${linkedReviewers.map(r => `<@${r.discordId}>`).join(', ')}\n\nThe admin is cleaning up the reviewer list. Click the button below and respond within **7 days** or you will be automatically disabled.\n*(Your response is only visible to you)*`,
+    components: [respondRow],
+    fetchReply: true
+  });
+
+  return interaction.followUp({
+    content: `✅ Notified ${linkedReviewers.length} reviewers. 7-day timeout started.`,
+    ephemeral: true
+  });
+}
+
+async function handleCleanupStatus(interaction) {
+  const cleanup = loadCleanupData();
+
+  if (!cleanup.campaigns.length) {
+    return interaction.reply({ embeds: [createErrorEmbed('No cleanup campaigns found.')], ephemeral: true });
+  }
+
+  const campaign = cleanup.campaigns[cleanup.campaigns.length - 1];
+  const startedAt = new Date(campaign.startedAt);
+  const deadline = new Date(startedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const now = Date.now();
+  const timeLeft = Math.max(0, deadline.getTime() - now);
+  const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
+
+  const staying = campaign.entries.filter(e => e.status === 'staying');
+  const leaving = campaign.entries.filter(e => e.status === 'leaving' || e.status.startsWith('auto_removed'));
+  const pending = campaign.entries.filter(e => e.status === 'pending');
+
+  const lines = [
+    `**Campaign** started by **${campaign.startedBy}** on ${startedAt.toLocaleDateString()}`,
+    `⏰ **${daysLeft} day(s)** until auto-removal of non-responders`,
+    '',
+    `✅ **Staying (${staying.length})**: ${staying.length > 0 ? staying.map(e => e.name).join(', ') : '—'}`,
+    `🚪 **Leaving (${leaving.length})**: ${leaving.length > 0 ? leaving.map(e => e.name).join(', ') : '—'}`,
+    `⏳ **Pending (${pending.length})**: ${pending.length > 0 ? pending.map(e => e.name).join(', ') : '—'}`,
+  ];
+
+  return interaction.reply({ embeds: [createSuccessEmbed(lines.join('\n'))], ephemeral: true });
+}

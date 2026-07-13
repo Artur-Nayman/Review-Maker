@@ -373,6 +373,28 @@ function generateReviewId(data) {
   return `REV-${num}`;
 }
 
+// --- Cleanup Campaigns (stored separately from main data) ---
+const CLEANUP_PATH = process.env.TEST_CLEANUP_PATH || path.join(__dirname, 'cleanup-campaigns.json');
+
+function loadCleanupData() {
+  try {
+    if (fs.existsSync(CLEANUP_PATH)) {
+      return JSON.parse(fs.readFileSync(CLEANUP_PATH, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('[Cleanup] Failed to load cleanup data:', e.message);
+  }
+  return { campaigns: [] };
+}
+
+function saveCleanupData(data) {
+  try {
+    fs.writeFileSync(CLEANUP_PATH, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('[Cleanup] Failed to save cleanup data:', e.message);
+  }
+}
+
 module.exports = {
   init,
   loadData,
@@ -384,5 +406,7 @@ module.exports = {
   queryAll,
   queryOne,
   execute,
-  ensureInit
+  ensureInit,
+  loadCleanupData,
+  saveCleanupData
 };
