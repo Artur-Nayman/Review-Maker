@@ -9,3 +9,4 @@ teams-bot/
 
 # App data (local changes, do not track)
 server/data.json
+server/cleanup-campaigns.json
