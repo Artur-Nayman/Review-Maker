@@ -97,6 +97,10 @@ const API = {
     return this.post(`/api/reviews/${id}/comment`, { author, text });
   },
 
+  async seniorApproveReview(id, seniorName) {
+    return this.post(`/api/reviews/${id}/senior-approve`, { seniorName });
+  },
+
   async updateRole(name, role) {
     return this.put(`/api/reviewers/${name}/role`, { role });
   },
@@ -109,8 +113,8 @@ const API = {
     return this.post('/api/reviews/manual', { branch, merger, reviewType, priority, reviewers });
   },
 
-  async addReviewer(name, speciality, role) {
-    return this.post('/api/reviewers', { name, speciality, role });
+  async addReviewer(name, speciality, role, discordId) {
+    return this.post('/api/reviewers', { name, speciality, role, discordId });
   },
 
   async removeReviewer(name) {

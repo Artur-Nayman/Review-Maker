@@ -51,14 +51,20 @@ module.exports = {
     .addSubcommand(subcommand =>
       subcommand
         .setName('set-role')
-        .setDescription('Change a user role')
+        .setDescription('Change a user role and/or speciality')
         .addStringOption(opt => opt.setName('user').setDescription('User name').setRequired(true))
-        .addStringOption(opt => opt.setName('role').setDescription('New role').setRequired(true).addChoices(
+        .addStringOption(opt => opt.setName('role').setDescription('New role').addChoices(
           { name: 'Reviewer', value: 'reviewer' },
           { name: 'Senior', value: 'senior' },
           { name: 'Scrum Master', value: 'scrum_master' },
           { name: 'Manager', value: 'manager' },
           { name: 'Admin', value: 'admin' }
+        ))
+        .addStringOption(opt => opt.setName('speciality').setDescription('New speciality').addChoices(
+          { name: 'Fullstack', value: 'Fullstack' },
+          { name: 'Frontend', value: 'Frontend' },
+          { name: 'Backend', value: 'Backend' },
+          { name: 'None', value: 'None' }
         ))
     )
     .addSubcommand(subcommand =>
@@ -150,11 +156,6 @@ module.exports = {
       subcommand
         .setName('cleanup')
         .setDescription('Start a cleanup campaign — DM all reviewers to confirm activity')
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('cleanup-status')
-        .setDescription('Show progress of the current cleanup campaign')
     )
     .addSubcommand(subcommand =>
       subcommand
@@ -276,6 +277,7 @@ module.exports = {
       case 'set-role': {
         const name = interaction.options.getString('user');
         const role = interaction.options.getString('role');
+        const speciality = interaction.options.getString('speciality');
         const reviewer = getReviewerByName(data, name);
 
         if (!reviewer) {
@@ -294,11 +296,17 @@ module.exports = {
           reviewer.speciality = 'None';
         }
 
-        reviewer.role = role;
+        if (role) reviewer.role = role;
+        if (speciality) reviewer.speciality = speciality;
+
         saveData(data, "Bot admin action");
 
+        const changes = [];
+        if (role) changes.push(`role → **${role}**`);
+        if (speciality) changes.push(`speciality → **${speciality}**`);
+
         return interaction.reply({
-          embeds: [createSuccessEmbed(`Role for **${name}** changed to **${role}**`)]
+          embeds: [createSuccessEmbed(`**${name}** updated: ${changes.join(', ') || 'no changes'}`)]
         });
       }
 
@@ -628,10 +636,6 @@ module.exports = {
 
       case 'cleanup': {
         return handleCleanup(interaction, data, user);
-      }
-
-      case 'cleanup-status': {
-        return handleCleanupStatus(interaction);
       }
 
       case 'git-pull': {

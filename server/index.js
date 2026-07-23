@@ -475,6 +475,39 @@ app.post('/api/reviews/:id/escalation-decide', (req, res) => {
   res.json(review);
 });
 
+app.post('/api/reviews/:id/senior-approve', (req, res) => {
+  const { seniorName } = req.body;
+  const data = loadData();
+  const senior = getReviewerByName(data, seniorName);
+
+  if (!senior || senior.role !== 'senior') {
+    return res.status(403).json({ error: 'Only seniors can use this endpoint' });
+  }
+
+  const review = findReviewById(data, req.params.id);
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+  if (review.status !== 'in_review' && review.status !== 'fix_made') {
+    return res.status(400).json({ error: 'Review is not in a reviewable state' });
+  }
+
+  let approvedCount = 0;
+  for (const rv of review.reviewers) {
+    if (rv.status === 'pending') {
+      rv.status = 'approved';
+      rv.respondedAt = new Date().toISOString();
+      decrementReviewerLoad(data, rv.name);
+      approvedCount++;
+    }
+  }
+
+  review.approvalCount = review.reviewers.length;
+  review.status = 'approved';
+  review.updatedAt = new Date().toISOString();
+
+  saveData(data, `Review ${req.params.id} senior-approved by ${seniorName}`);
+  res.json(review);
+});
+
 app.post('/api/reviews/:id/comment', (req, res) => {
   const { author, text } = req.body;
   const data = loadData();
@@ -706,7 +739,7 @@ app.post('/api/reviews/manual', (req, res) => {
 });
 
 app.post('/api/reviewers', async (req, res) => {
-  const { name, speciality, role } = req.body;
+  const { name, speciality, role, discordId } = req.body;
 
   let data = loadData();
   if (getReviewerByName(data, name)) {
@@ -729,6 +762,7 @@ app.post('/api/reviewers', async (req, res) => {
     role: role || 'reviewer',
     email: '',
     password: hashedPassword,
+    discordId: discordId || '',
     disabled: false,
     maxLoad: 0,
     weeklyCount: 0,
@@ -981,17 +1015,18 @@ app.post('/api/import-csv', (req, res) => {
   }
 
   const data = loadData();
-  const admin = data.reviewers.find(r => r.role === 'admin');
-  const senior = data.reviewers.find(r => r.role === 'senior');
-  const scrumMaster = data.reviewers.find(r => r.role === 'scrum_master');
-  const manager = data.reviewers.find(r => r.role === 'manager');
+  // ponytail: preserve ALL privileged users, not just the first one
+  const admins = data.reviewers.filter(r => r.role === 'admin');
+  const seniors = data.reviewers.filter(r => r.role === 'senior');
+  const scrumMasters = data.reviewers.filter(r => r.role === 'scrum_master');
+  const managers = data.reviewers.filter(r => r.role === 'manager');
 
   data.reviewers = newReviewers;
 
-  if (admin) data.reviewers.push(admin);
-  if (senior) data.reviewers.push(senior);
-  if (scrumMaster) data.reviewers.push(scrumMaster);
-  if (manager) data.reviewers.push(manager);
+  if (admins.length) data.reviewers.push(...admins);
+  if (seniors.length) data.reviewers.push(...seniors);
+  if (scrumMasters.length) data.reviewers.push(...scrumMasters);
+  if (managers.length) data.reviewers.push(...managers);
 
   saveData(data, `CSV imported: ${newReviewers.length} reviewers`);
   res.json(data.reviewers);

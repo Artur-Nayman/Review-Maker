@@ -160,6 +160,44 @@
       <div class="card full-width">
         <h2>Admin Panel</h2>
 
+        <div class="admin-section" id="admin-add-user">
+          <h3>Add User</h3>
+          <form id="add-user-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adduser-name">Name *</label>
+                <input type="text" id="adduser-name" required>
+              </div>
+              <div class="form-group">
+                <label for="adduser-speciality">Speciality</label>
+                <select id="adduser-speciality">
+                  <option value="Fullstack">Fullstack</option>
+                  <option value="Frontend">Frontend</option>
+                  <option value="Backend">Backend</option>
+                  <option value="None">None</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="adduser-role">Role</label>
+                <select id="adduser-role">
+                  <option value="reviewer">Reviewer</option>
+                  <option value="senior">Senior</option>
+                  <option value="scrum_master">Scrum Master</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:0.5rem;">
+              <label for="adduser-discordid">Discord ID (optional — Right-click user → Copy ID)</label>
+              <input type="text" id="adduser-discordid" placeholder="e.g. 123456789012345678">
+            </div>
+            <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+              <button type="submit" class="btn btn-primary">Add User</button>
+            </div>
+            <div id="adduser-result" style="margin-top:0.75rem;"></div>
+          </form>
+        </div>
+
         <div class="admin-section" id="admin-season-groups">
           <h3>New Season Group</h3>
           <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">

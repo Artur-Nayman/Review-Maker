@@ -115,6 +115,12 @@ module.exports = {
         .setName('unassign')
         .setDescription('Unassign yourself from a review (notifies admin)')
         .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. 1 or REV-1)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('senior-approve')
+        .setDescription('Force-approve a review (senior only — bypasses approval count)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. 1 or REV-1)').setRequired(true))
     ),
 
   async execute(interaction) {
@@ -363,6 +369,47 @@ module.exports = {
         return interaction.reply({
           content: `${adminMentions}\n⚠️ **${reviewer.name}** has unassigned themselves from review **${review.id}** (${review.branch}).`,
           embeds: [createErrorEmbed(`You have been unassigned from review **${review.id}**. An admin has been notified.`)]
+        });
+      }
+
+      case 'senior-approve': {
+        if (reviewer.role !== 'senior') {
+          return interaction.reply({ content: 'Only seniors can use this command.', ephemeral: true });
+        }
+
+        const id = interaction.options.getString('id');
+        const review = getReviewById(id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed('Review not found')], ephemeral: true });
+        }
+
+        if (review.status !== 'in_review' && review.status !== 'fix_made') {
+          return interaction.reply({ embeds: [createErrorEmbed('Review is not in a reviewable state')], ephemeral: true });
+        }
+
+        const { saveData } = require('../utils/data');
+        let approvedCount = 0;
+        for (const rv of review.reviewers) {
+          if (rv.status === 'pending') {
+            rv.status = 'approved';
+            rv.respondedAt = new Date().toISOString();
+            // Decrement load for the reviewer being approved
+            const rev = data.reviewers.find(r => r.name.toLowerCase() === rv.name.toLowerCase());
+            if (rev && rev.load > 0) rev.load--;
+            approvedCount++;
+          }
+        }
+
+        review.approvalCount = review.reviewers.length;
+        review.status = 'approved';
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} senior-approved by ${reviewer.name}`);
+
+        const embed = require('../utils/embeds').createReviewEmbed(review);
+        return interaction.reply({
+          content: `✅ Senior approved **${review.id}** (${review.branch}). All pending responses marked as approved.`,
+          embeds: [embed]
         });
       }
     }

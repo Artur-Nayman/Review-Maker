@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupNewReviewForm();
   setupAdminForms();
+  setupAddUserForm();
   loadReviewers();
   loadReviews();
 });
@@ -273,6 +274,9 @@ async function openReviewModal(id) {
     if (isEscalated && isSenior && review.escalation?.assignedTo?.toLowerCase() === currentUser.name.toLowerCase()) {
       actionsHTML += `<button class="btn btn-sm btn-success" onclick="escalationDecide('${id}', 'approve')">Approve</button><button class="btn btn-sm btn-danger" onclick="escalationDecide('${id}', 'reject')">Reject</button>`;
     }
+    if (isSenior && (review.status === 'in_review' || review.status === 'fix_made')) {
+      actionsHTML += `<button class="btn btn-sm btn-primary" onclick="seniorApprove('${id}')">★ Senior Approve</button>`;
+    }
     if (canDelete && isActive) {
       actionsHTML += `<button class="btn btn-sm btn-danger" onclick="deleteReview('${id}'); closeModal();">Delete Review</button>`;
     }
@@ -399,6 +403,19 @@ async function escalationDecide(id, decision) {
   }
 }
 
+async function seniorApprove(id) {
+  if (!confirm('Senior approve this review? This will fully approve it immediately, bypassing other reviewers.')) return;
+  try {
+    await API.seniorApproveReview(id, currentUser.name);
+    closeModal();
+    loadReviews();
+    loadReviewers();
+    loadMyReviews();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 async function addComment(id) {
   const text = document.getElementById('comment-text').value.trim();
   if (!text) return;
@@ -433,6 +450,30 @@ function setupAdminForms() {
       loadAdminData();
       loadReviewers();
     } catch (err) { alert(err.message); }
+  });
+}
+
+function setupAddUserForm() {
+  if (currentUser.role !== 'admin') return;
+  document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById('adduser-result');
+    const name = document.getElementById('adduser-name').value.trim();
+    const speciality = document.getElementById('adduser-speciality').value;
+    const role = document.getElementById('adduser-role').value;
+    const discordId = document.getElementById('adduser-discordid').value.trim();
+
+    if (!name) { resultEl.innerHTML = '<span class="error-msg">Name is required</span>'; return; }
+
+    try {
+      const reviewers = await API.addReviewer(name, speciality, role, discordId);
+      resultEl.innerHTML = `<span class="success-msg">✅ User <strong>${escHtml(name)}</strong> added!</span>`;
+      document.getElementById('add-user-form').reset();
+      loadReviewers();
+      if (typeof loadAdminData === 'function') loadAdminData();
+    } catch (err) {
+      resultEl.innerHTML = `<span class="error-msg">${escHtml(err.message)}</span>`;
+    }
   });
 }
 

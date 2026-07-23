@@ -635,6 +635,9 @@ async function handleCleanupButton(interaction) {
   if (action === 'cleanup-leaving') {
     entry.status = 'leaving';
     entry.respondedAt = new Date().toISOString();
+    if (reviewer.role === 'admin') {
+      return interaction.reply({ content: 'Admins cannot leave via cleanup.', ephemeral: true });
+    }
     const reassignedCount = reassignReviewsAndClearLoad(data, reviewer.name);
     // Delete reviewer completely
     data.reviewers = data.reviewers.filter(r => r.name !== reviewer.name);
@@ -709,7 +712,7 @@ function startCleanupChecker() {
       for (const entry of campaign.entries) {
         if (entry.status === 'pending' && Date.now() - campaignStart >= sevenDays) {
           const reviewer = data.reviewers.find(r => r.name === entry.name);
-          if (reviewer) {
+          if (reviewer && reviewer.role !== 'admin') {
             const reassigned = reassignReviewsAndClearLoad(data, reviewer.name);
             data.reviewers = data.reviewers.filter(r => r.name !== reviewer.name);
             entry.status = `auto_removed (${reassigned} reviews reassigned)`;

@@ -98,7 +98,7 @@ function createReviewersEmbed(reviewers, settings) {
     .setColor(0x3B82F6);
 
   let description = '';
-  reviewers.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+  reviewers.sort((a, b) => a.name.localeCompare(b.name)).filter(r => !r.disabled).forEach(r => {
     const isReviewable = r.role === 'reviewer' || r.role === 'senior';
     const loadBar = isReviewable
       ? '🟩'.repeat(r.load) + '⬜'.repeat(maxLoad - r.load)
