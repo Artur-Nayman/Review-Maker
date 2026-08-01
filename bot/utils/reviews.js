@@ -69,7 +69,7 @@ function getSeniorReviewer(data) {
   return data.reviewers.find(r => r.role === 'senior');
 }
 
-function createReview(branch, merger, reviewType, priority, commitRef = '') {
+function createReview(branch, merger, reviewType, priority, commitRef = '', mrIid = '', mrUrl = '', mrTitle = '') {
   const data = loadData();
   const count = data.settings.reviewersPerRequest || 3;
   const reviewers = selectReviewers(data, reviewType, count, merger);
@@ -98,8 +98,20 @@ function createReview(branch, merger, reviewType, priority, commitRef = '') {
     escalation: null,
     comments: [],
     commitRef,
-    deadlineAt: deadline.toISOString()
+    deadlineAt: deadline.toISOString(),
+    mrIid,
+    mrUrl
   };
+
+  if (mrIid) {
+    const desiredId = `REV-${mrIid}`;
+    const collision = data.reviews.find(r =>
+      r.id === desiredId &&
+      ['in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status)
+    );
+    if (collision) throw new Error(`MR !${mrIid} already has an active review (${desiredId})`);
+    review.id = desiredId;
+  }
 
   data.reviews.push(review);
   saveData(data, `Review ${review.id} created: ${branch}`);

@@ -255,6 +255,14 @@ app.get('/api/reviews', (req, res) => {
   res.json({ active, history });
 });
 
+app.get('/api/reviews/approved', (req, res) => {
+  const data = loadData();
+  const approved = data.reviews
+    .filter(r => r.status === 'approved')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  res.json(approved);
+});
+
 app.get('/api/reviews/:id', (req, res) => {
   const data = loadData();
   const review = findReviewById(data, req.params.id);
@@ -304,6 +312,24 @@ app.post('/api/reviews', (req, res) => {
   saveData(data, `Review ${review.id} created: ${review.branch}`);
 
   res.json(review);
+});
+
+app.post('/api/reviews/from-mr', async (req, res) => {
+  const { mrIid, merger, reviewType, priority } = req.body;
+  if (!mrIid || !merger || !reviewType || !priority) {
+    return res.status(400).json({ error: 'Missing required fields: mrIid, merger, reviewType, priority' });
+  }
+
+  try {
+    const { fetchMRByIid } = require('./gitlab-sync');
+    const { createReview } = require('../bot/utils/reviews');
+    const cleanIid = String(mrIid).trim().replace(/^!/, '');
+    const mr = await fetchMRByIid(cleanIid);
+    const review = createReview(mr.title, merger, reviewType, priority, '', cleanIid, mr.web_url, mr.title);
+    res.json(review);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/reviews/:id', (req, res) => {
@@ -1111,58 +1137,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
-// --- Season Groups (Google Sheets) ---
-app.post('/api/sheets/new-group', async (req, res) => {
-  const { userRole } = req.body;
-  if (userRole !== 'admin' && userRole !== 'manager') {
-    return res.status(403).json({ error: 'Only admin/manager can create new groups' });
-  }
-  try {
-    const { createSeasonTab } = require('./season-groups');
-    const result = await createSeasonTab();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/sheets/next-group-name', (req, res) => {
-  try {
-    const { getNextTabName } = require('./season-groups');
-    res.json({ tabName: getNextTabName() });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/sheets/sync-discord', (req, res) => {
-  const { userRole } = req.body;
-  if (userRole !== 'admin' && userRole !== 'manager') {
-    return res.status(403).json({ error: 'Only admin/manager can sync' });
-  }
-  try {
-    const data = loadData();
-    require('./discord-sync').bulkSyncDiscordApprovals(data);
-    res.json({ message: 'Discord approvals synced' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/sheets/bulk-sync', (req, res) => {
-  const { userRole } = req.body;
-  if (userRole !== 'admin' && userRole !== 'manager') {
-    return res.status(403).json({ error: 'Only admin/manager can sync' });
-  }
-  try {
-    const data = loadData();
-    require('./sheets-sync').bulkSyncToSheet(data);
-    res.json({ message: 'Review Queue bulk synced' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 async function startServer() {
   const db = require('./db');
   await db.init();
@@ -1171,12 +1145,12 @@ async function startServer() {
   await migratePasswords(data);
 
   try {
-    const { syncGitLabMRs } = require('./gitlab-sync');
-    syncGitLabMRs();
-    setInterval(() => syncGitLabMRs(), 5 * 60 * 1000);
-    console.log('[GitLabSync] Initial sync complete, polling every 5 min');
+    const { checkMergedMRs } = require('./gitlab-sync');
+    checkMergedMRs();
+    setInterval(() => checkMergedMRs(), 5 * 60 * 1000);
+    console.log('[GitLabSync] Initial check complete, polling every 5 min');
   } catch (e) {
-    console.log('[GitLabSync] Initial sync skipped:', e.message);
+    console.log('[GitLabSync] Initial check skipped:', e.message);
   }
 
   app.listen(PORT, () => {

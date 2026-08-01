@@ -198,29 +198,6 @@
           </form>
         </div>
 
-        <div class="admin-section" id="admin-season-groups">
-          <h3>New Season Group</h3>
-          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
-            Creates a new Google Sheets tab for the upcoming season's merge requests.
-            Next name: <strong id="next-group-name">...</strong>
-          </p>
-          <div class="form-row" style="gap:0.5rem;">
-            <button class="btn btn-primary" onclick="createNewGroup()">Create New Group</button>
-            <button class="btn btn-ghost" onclick="loadNextGroupName()">Refresh Name</button>
-          </div>
-          <div id="group-result" style="margin-top:0.75rem;"></div>
-        </div>
-
-        <div class="admin-section" id="admin-sync">
-          <h3>Sync Discord Approvals</h3>
-          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
-            Updates the "Discord Approvals" column (U) in the Merge Requests tab
-            with approval data from the review system.
-          </p>
-          <button class="btn btn-primary" onclick="syncDiscordApprovals()">Sync Now</button>
-          <div id="sync-result" style="margin-top:0.75rem;"></div>
-        </div>
-
         <div class="admin-section" id="admin-gitlab">
           <h3>GitLab Integration</h3>
           <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:0.75rem;">
@@ -373,19 +350,6 @@
         </div>
 
         <div class="debug-section" style="margin-top:1.5rem;">
-          <h3>Sheets Inspector</h3>
-          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;align-items:center;">
-            <label>Tab:</label>
-            <select id="debug-sheets-tab" style="background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:0.25rem;">
-              <option value="Review Queue">Review Queue</option>
-              <option value="Merge Requests">Merge Requests</option>
-            </select>
-            <button class="btn btn-sm btn-primary" onclick="debugInspectSheets()">Inspect</button>
-          </div>
-          <div id="debug-sheets-result" style="font-size:0.75rem;color:var(--text-muted);">Click "Inspect" to see column mapping</div>
-        </div>
-
-        <div class="debug-section" style="margin-top:1.5rem;">
           <h3>Git Status</h3>
           <button class="btn btn-sm btn-primary" onclick="debugGitStatus()">Check</button>
           <pre id="debug-git-result" style="margin-top:0.5rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:0.75rem;font-size:0.7rem;max-height:200px;overflow:auto;white-space:pre-wrap;color:var(--text);font-family:monospace;"></pre>
@@ -393,10 +357,6 @@
 
         <div class="debug-section" style="margin-top:1.5rem;">
           <h3>Quick Actions</h3>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <button class="btn btn-sm btn-primary" onclick="debugTriggerSync()">Sync Discord Approvals</button>
-            <button class="btn btn-sm btn-primary" onclick="debugBulkSyncSheets()">Bulk Sync Review Queue</button>
-          </div>
           <div id="debug-action-result" style="margin-top:0.5rem;"></div>
         </div>
       </div>

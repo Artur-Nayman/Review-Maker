@@ -56,9 +56,14 @@ function createReviewEmbed(review, showMentions = false) {
     return `${mention} ${statusEmoji} ${rv.status}${comment}`;
   }).join('\n');
 
-  const title = review.commitRef
-    ? `Review: \`${review.commitRef}\``
-    : `Review: ${review.branch}`;
+  let title;
+  if (review.mrUrl) {
+    title = `Review: [${review.branch || 'MR !' + review.mrIid}](${review.mrUrl})`;
+  } else if (review.commitRef) {
+    title = `Review: \`${review.commitRef}\``;
+  } else {
+    title = `Review: ${review.branch}`;
+  }
 
   const fields = [
     { name: 'Merger', value: review.merger, inline: true },
@@ -83,11 +88,15 @@ function createReviewEmbed(review, showMentions = false) {
     fields.splice(1, 0, { name: 'Branch', value: review.branch, inline: true }, { name: 'Commit', value: `\`${review.commitRef}\``, inline: true });
   }
 
+  if (review.status === 'approved' && review.mrUrl) {
+    fields.push({ name: '🔗 Merge Request', value: `[Open in GitLab](${review.mrUrl})`, inline: false });
+  }
+
   return new EmbedBuilder()
     .setTitle(title)
     .setColor(statusColor(review.status))
     .addFields(fields)
-    .setFooter({ text: `ID: ${review.id}` })
+    .setFooter({ text: `ID: ${review.id}${review.mrIid ? ' • MR !' + review.mrIid : ''}` })
     .setTimestamp(new Date(review.updatedAt));
 }
 
@@ -122,7 +131,8 @@ function createActiveReviewsEmbed(reviews) {
 
   let description = '';
   reviews.forEach(r => {
-    description += `${priorityEmoji(r.priority)} **${r.branch}** - ${formatStatus(r.status)}\n`;
+    const branchText = r.mrUrl ? `[${r.branch}](${r.mrUrl})` : r.branch;
+    description += `${priorityEmoji(r.priority)} **${branchText}** - ${formatStatus(r.status)}\n`;
     description += `Merger: ${r.merger} | ${r.approvalCount}/${r.reviewers.length} approvals\n`;
     description += `ID: \`${r.id}\`\n\n`;
   });
@@ -143,7 +153,8 @@ function createHistoryEmbed(reviews) {
 
   let description = '';
   reviews.slice(0, 10).forEach(r => {
-    description += `${priorityEmoji(r.priority)} **${r.branch}** - ${formatStatus(r.status)}\n`;
+    const branchText = r.mrUrl ? `[${r.branch}](${r.mrUrl})` : r.branch;
+    description += `${priorityEmoji(r.priority)} **${branchText}** - ${formatStatus(r.status)}\n`;
     description += `Merger: ${r.merger} | ${new Date(r.createdAt).toLocaleDateString()}\n\n`;
   });
 

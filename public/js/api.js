@@ -185,9 +185,6 @@ const API = {
   async debugUpdateRow(table, idColumn, idValue, updates) {
     return this.post(`/api/debug/db/row/${table}`, { idColumn, idValue, updates, userRole: currentUser?.role, userName: currentUser?.name });
   },
-  async debugGetSheetColumns(tab) {
-    return this.get(`/api/debug/sheets/columns?tab=${encodeURIComponent(tab)}&userRole=${currentUser?.role}`);
-  },
   async debugGetGitStatus() {
     return this.get(`/api/debug/git/status?userRole=${currentUser?.role}`);
   }

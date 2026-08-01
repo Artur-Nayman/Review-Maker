@@ -464,11 +464,8 @@ async function handleFixDoneNotify(interaction) {
 }
 
 async function handleManualReview(interaction) {
-  const parts = interaction.customId.split('_');
-  const size = parts[parts.length - 1];
-  const priority = parts[parts.length - 2];
-  const reviewType = parts[parts.length - 3];
-  const branch = parts.slice(1, -3).join('_');
+  const [, mrIid, reviewType, priority, encodedTitle, mrUrl] = interaction.customId.split('|');
+  const branch = decodeURIComponent(encodedTitle);
 
   const data = loadData();
   const selectedReviewers = interaction.values;
@@ -481,18 +478,33 @@ async function handleManualReview(interaction) {
     if (reviewer) {
       reviewer.load = Math.min(reviewer.load + 1, 999);
       reviewer.weeklyCount = (reviewer.weeklyCount || 0) + 1;
-      if (size === 'large') reviewer.currentLargeReview = true;
     }
     return { name, status: 'pending', notified: false };
   });
 
-  const reviewId = generateReviewId(data);
+  let reviewId = generateReviewId(data);
+
+  if (mrIid) {
+    const desiredId = `REV-${mrIid}`;
+    const collision = data.reviews.find(r =>
+      r.id === desiredId &&
+      ['in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status)
+    );
+    if (collision) {
+      return interaction.update({
+        content: `MR !${mrIid} already has an active review (${desiredId})`,
+        embeds: [],
+        components: []
+      });
+    }
+    reviewId = desiredId;
+  }
 
   const review = {
     id: reviewId,
     branch,
     reviewType,
-    size: size || 'medium',
+    size: 'medium',
     commits: [],
     merger,
     reviewers: reviewReviewers,
@@ -502,7 +514,9 @@ async function handleManualReview(interaction) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     escalation: null,
-    comments: []
+    comments: [],
+    mrIid: mrIid || '',
+    mrUrl: mrUrl || ''
   };
 
   data.reviews.push(review);
@@ -513,7 +527,7 @@ async function handleManualReview(interaction) {
   const mentionText = mentions.length > 0 ? `\n${mentions.join(' ')} — please review!` : '';
 
   await interaction.update({
-    content: `Review created: **${review.id}**${mentionText}`,
+    content: `Review created: **${review.id}** — [${branch}](${mrUrl})${mentionText}`,
     components: [],
     ephemeral: false
   });

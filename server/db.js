@@ -130,6 +130,16 @@ async function init() {
   } catch (e) {
     // Column already exists
   }
+  try {
+    db.run("ALTER TABLE reviews ADD COLUMN mrIid TEXT DEFAULT ''");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    db.run("ALTER TABLE reviews ADD COLUMN mrUrl TEXT DEFAULT ''");
+  } catch (e) {
+    // Column already exists
+  }
 
   initialized = true;
   migrateFromJsonIfNeeded();
@@ -256,6 +266,8 @@ function loadData() {
       review.needAttention = null;
     }
     review.approvalCount = review.approvalCount || 0;
+    review.mrIid = review.mrIid || '';
+    review.mrUrl = review.mrUrl || '';
   }
 
   const settings = {};
@@ -324,7 +336,7 @@ function saveData(data, commitMsg) {
     }
 
     for (const review of data.reviews || []) {
-      execute('INSERT INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention, deadlineAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null, review.deadlineAt || null]);
+      execute('INSERT INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention, deadlineAt, mrIid, mrUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null, review.deadlineAt || null, review.mrIid || '', review.mrUrl || '']);
 
       for (const rv of review.reviewers || []) {
         execute('INSERT INTO review_reviewers (reviewId, name, status, comment, notified, respondedAt) VALUES (?, ?, ?, ?, ?, ?)', [review.id, rv.name, rv.status || 'pending', rv.comment || '', rv.notified ? 1 : 0, rv.respondedAt || null]);
@@ -349,8 +361,6 @@ function saveData(data, commitMsg) {
     db.run('ROLLBACK');
     throw e;
   }
-
-  // ponytail: Google Sheets sync removed — OAuth token expired, not needed
 }
 
 function generateReviewId(data) {

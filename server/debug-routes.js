@@ -105,49 +105,6 @@ router.post('/db/row/:table', requireAdmin, (req, res) => {
   }
 });
 
-router.get('/sheets/columns', requireAdmin, async (req, res) => {
-  const tabName = req.query.tab;
-  if (!tabName) return res.status(400).json({ error: 'tab query param required' });
-
-  try {
-    let sheets;
-    try {
-      const { google } = require('googleapis');
-      const credsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-      const credsPath = process.env.GOOGLE_SERVICE_ACCOUNT_PATH;
-      let credentials;
-      if (credsJson) credentials = JSON.parse(credsJson);
-      else if (credsPath) credentials = require(path.resolve(credsPath));
-      if (credentials) {
-        const auth = new google.auth.JWT(credentials.client_email, null, credentials.private_key, ['https://www.googleapis.com/auth/spreadsheets']);
-        sheets = google.sheets({ version: 'v4', auth });
-      }
-    } catch {}
-
-    if (!sheets) {
-      return res.json({ available: false, reason: 'No Google credentials configured' });
-    }
-
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-    if (!sheetId) return res.json({ available: false, reason: 'No GOOGLE_SHEET_ID' });
-
-    const result = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: `${tabName}!1:1`
-    });
-    const headers = (result.data.values && result.data.values[0]) || [];
-    const cols = headers.map((h, i) => ({
-      index: i,
-      column: String.fromCharCode(65 + i),
-      header: h
-    }));
-
-    res.json({ available: true, tabName, columns: cols });
-  } catch (err) {
-    res.json({ available: true, error: err.message });
-  }
-});
-
 router.get('/git/status', requireAdmin, async (req, res) => {
   try {
     const [branch, log, status] = await Promise.all([
