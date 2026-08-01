@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, Collection, ActionRowBuilder, ButtonBuilder, 
 const fs = require('fs');
 const path = require('path');
 const { getReviewerByDiscordId, loadData, saveData, determineReviewSize, generateReviewId } = require('./utils/data');
-const { approveReview, disapproveReview, getReviewById, incrementReviewerLoads } = require('./utils/reviews');
+const { approveReview, disapproveReview, getReviewById, incrementReviewerLoads, selectReviewers } = require('./utils/reviews');
 const { createReviewEmbed, createErrorEmbed, createSuccessEmbed, getReviewerMention } = require('./utils/embeds');
 
 const { exec: execCb } = require('child_process');
@@ -55,7 +55,7 @@ const client = new Client({
 client.health = {
   startedAt: Date.now(),
   discord: { status: 'connecting', lastReady: null, lastDisconnect: null, ping: 0 },
-  sheets: { status: 'unknown', lastCheck: null, lastError: null },
+  sheets: { status: 'disabled', lastCheck: null, lastError: null },
   db: { status: 'unknown', lastCheck: null, lastError: null },
   git: { lastPull: null, lastPullResult: null }
 };
@@ -108,10 +108,11 @@ client.on('clientReady', async () => {
   const db = require('../server/db');
   try {
     await db.init();
-    db.bootstrapAdmins();
   } catch (e) {
     console.error('[DB] Init failed:', e.message);
   }
+
+  db.bootstrapAdmins();
 
   // Auto-start Tailscale SSH for remote access
   try {
@@ -198,27 +199,6 @@ client.on('clientReady', async () => {
     process.exit(0);
   }, MS_WEEK);
 
-  async function checkGoogleSheets() {
-    try {
-      const resp = await fetch('https://sheets.googleapis.com/$discovery/rest?version=v4', {
-        signal: AbortSignal.timeout(10000)
-      });
-      if (resp.ok) {
-        client.health.sheets.status = 'ok';
-        client.health.sheets.lastCheck = Date.now();
-        client.health.sheets.lastError = null;
-        console.log('[Health] Google Sheets API: reachable');
-      } else {
-        throw new Error(`HTTP ${resp.status}`);
-      }
-    } catch (err) {
-      client.health.sheets.status = 'error';
-      client.health.sheets.lastCheck = Date.now();
-      client.health.sheets.lastError = err.message;
-      console.error('[Health] Google Sheets API unreachable:', err.message);
-    }
-  }
-
   async function checkDatabase() {
     try {
       const db = require('../server/db');
@@ -240,11 +220,11 @@ client.on('clientReady', async () => {
     }
   }
 
-  checkGoogleSheets();
   checkDatabase();
-  setInterval(checkGoogleSheets, 30 * 60 * 1000);
   setInterval(checkDatabase, 30 * 60 * 1000);
   setInterval(() => { client.health.discord.ping = client.ws.ping; }, 60 * 1000);
+
+  startCleanupChecker();
 });
 
 client.on('interactionCreate', async interaction => {
@@ -284,6 +264,10 @@ client.on('interactionCreate', async interaction => {
 async function handleButton(interaction) {
   if (interaction.customId === 'link-register') {
     return handleLinkRegister(interaction);
+  }
+
+  if (interaction.customId.startsWith('cleanup-')) {
+    return handleCleanupButton(interaction);
   }
 
   const firstUnderscore = interaction.customId.indexOf('_');
@@ -480,11 +464,8 @@ async function handleFixDoneNotify(interaction) {
 }
 
 async function handleManualReview(interaction) {
-  const parts = interaction.customId.split('_');
-  const size = parts[parts.length - 1];
-  const priority = parts[parts.length - 2];
-  const reviewType = parts[parts.length - 3];
-  const branch = parts.slice(1, -3).join('_');
+  const [, mrIid, reviewType, priority, encodedTitle, mrUrl] = interaction.customId.split('|');
+  const branch = decodeURIComponent(encodedTitle);
 
   const data = loadData();
   const selectedReviewers = interaction.values;
@@ -497,18 +478,33 @@ async function handleManualReview(interaction) {
     if (reviewer) {
       reviewer.load = Math.min(reviewer.load + 1, 999);
       reviewer.weeklyCount = (reviewer.weeklyCount || 0) + 1;
-      if (size === 'large') reviewer.currentLargeReview = true;
     }
     return { name, status: 'pending', notified: false };
   });
 
-  const reviewId = generateReviewId(data);
+  let reviewId = generateReviewId(data);
+
+  if (mrIid) {
+    const desiredId = `REV-${mrIid}`;
+    const collision = data.reviews.find(r =>
+      r.id === desiredId &&
+      ['in_review', 'fix_needed', 'fix_made', 'escalated'].includes(r.status)
+    );
+    if (collision) {
+      return interaction.update({
+        content: `MR !${mrIid} already has an active review (${desiredId})`,
+        embeds: [],
+        components: []
+      });
+    }
+    reviewId = desiredId;
+  }
 
   const review = {
     id: reviewId,
     branch,
     reviewType,
-    size: size || 'medium',
+    size: 'medium',
     commits: [],
     merger,
     reviewers: reviewReviewers,
@@ -518,7 +514,9 @@ async function handleManualReview(interaction) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     escalation: null,
-    comments: []
+    comments: [],
+    mrIid: mrIid || '',
+    mrUrl: mrUrl || ''
   };
 
   data.reviews.push(review);
@@ -529,7 +527,7 @@ async function handleManualReview(interaction) {
   const mentionText = mentions.length > 0 ? `\n${mentions.join(' ')} — please review!` : '';
 
   await interaction.update({
-    content: `Review created: **${review.id}**${mentionText}`,
+    content: `Review created: **${review.id}** — [${branch}](${mrUrl})${mentionText}`,
     components: [],
     ephemeral: false
   });
@@ -538,6 +536,10 @@ async function handleManualReview(interaction) {
 async function handleModal(interaction) {
   if (interaction.customId === 'register-modal') {
     return handleRegisterModal(interaction);
+  }
+
+  if (interaction.customId.startsWith('cleanup-speciality-modal_')) {
+    return handleCleanupSpecialityModal(interaction);
   }
 
   if (!interaction.customId.startsWith('reject-modal_')) return;
@@ -566,6 +568,183 @@ async function handleModal(interaction) {
   } catch (err) {
     await interaction.reply({ embeds: [createErrorEmbed(err.message)], ephemeral: true });
   }
+}
+
+// ===== CLEANUP CAMPAIGN HANDLERS =====
+
+// Reassign pending reviews from a leaving/disabled reviewer and reset their load
+function reassignReviewsAndClearLoad(data, reviewerName) {
+  let count = 0;
+  for (const review of data.reviews) {
+    if (review.status !== 'in_review' && review.status !== 'fix_made') continue;
+    const entry = review.reviewers.find(r => r.name === reviewerName && r.status === 'pending');
+    if (!entry) continue;
+    const assignedNames = review.reviewers.map(r => r.name);
+    const replacements = selectReviewers(data, review.reviewType, 1, review.merger);
+    const available = replacements.filter(r => !assignedNames.includes(r.name));
+    if (available.length > 0) {
+      const replacement = available[0];
+      review.reviewers = review.reviewers.filter(r => r.name !== reviewerName);
+      review.reviewers.push({ name: replacement.name, status: 'pending', notified: false });
+      const replacementReviewer = data.reviewers.find(r => r.name === replacement.name);
+      if (replacementReviewer) replacementReviewer.load = Math.min(replacementReviewer.load + 1, data.settings.maxLoad || 3);
+      count++;
+    } else {
+      review.reviewers = review.reviewers.filter(r => r.name !== reviewerName);
+    }
+  }
+  const reviewer = data.reviewers.find(r => r.name === reviewerName);
+  if (reviewer) reviewer.load = 0;
+  return count;
+}
+
+async function handleCleanupButton(interaction) {
+  const parts = interaction.customId.split('_');
+  const action = parts[0]; // cleanup-staying, cleanup-leaving, cleanup-speciality, cleanup-respond
+
+  // "Respond" button — shows ephemeral per-user buttons
+  if (action === 'cleanup-respond') {
+    const { loadCleanupData } = require('./../server/db');
+    const cleanup = loadCleanupData();
+    const campaign = cleanup.campaigns[cleanup.campaigns.length - 1];
+    const entry = campaign?.entries.find(e => e.discordId === interaction.user.id);
+    if (!entry) {
+      return interaction.reply({ content: 'You are not part of this cleanup campaign.', ephemeral: true });
+    }
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`cleanup-staying_${entry.name}`).setLabel("✅ I'm staying").setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(`cleanup-leaving_${entry.name}`).setLabel("🚪 I'm leaving").setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`cleanup-speciality_${entry.name}`).setLabel('🔄 Change speciality').setStyle(ButtonStyle.Secondary)
+    );
+    return interaction.reply({
+      content: `📋 **Reviewer Cleanup** — Hello ${entry.name}\nThe admin is cleaning up the reviewer list. Please respond within **7 days** or you will be automatically disabled.`,
+      components: [row],
+      ephemeral: true
+    });
+  }
+  const name = parts.slice(1).join('_');
+
+  const data = loadData();
+  const reviewer = data.reviewers.find(r => r.name.toLowerCase() === name.toLowerCase());
+  if (!reviewer || reviewer.discordId !== interaction.user.id) {
+    return interaction.reply({ content: 'This button is not for you.', ephemeral: true });
+  }
+
+  const { loadCleanupData, saveCleanupData } = require('./../server/db');
+  const cleanup = loadCleanupData();
+  const campaign = cleanup.campaigns[cleanup.campaigns.length - 1];
+  const entry = campaign?.entries.find(e => e.name.toLowerCase() === name.toLowerCase());
+
+  if (!entry) {
+    return interaction.reply({ content: 'Cleanup entry not found.', ephemeral: true });
+  }
+
+  if (action === 'cleanup-staying') {
+    entry.status = 'staying';
+    entry.respondedAt = new Date().toISOString();
+    saveCleanupData(cleanup);
+    return interaction.reply({ content: '✅ Thanks! You\'re marked as staying.', ephemeral: true });
+  }
+
+  if (action === 'cleanup-leaving') {
+    entry.status = 'leaving';
+    entry.respondedAt = new Date().toISOString();
+    if (reviewer.role === 'admin') {
+      return interaction.reply({ content: 'Admins cannot leave via cleanup.', ephemeral: true });
+    }
+    const reassignedCount = reassignReviewsAndClearLoad(data, reviewer.name);
+    // Delete reviewer completely
+    data.reviewers = data.reviewers.filter(r => r.name !== reviewer.name);
+    saveData(data, `${reviewer.name} removed via cleanup campaign (${reassignedCount} reviews reassigned)`);
+    saveCleanupData(cleanup);
+    return interaction.reply({
+      content: `You've been removed from the reviewer list. ${reassignedCount > 0 ? `${reassignedCount} review(s) were reassigned.` : ''} Use \`/link\` to re-register if this was a mistake.`,
+      ephemeral: true
+    });
+  }
+
+  if (action === 'cleanup-speciality') {
+    const modal = new ModalBuilder()
+      .setCustomId(`cleanup-speciality-modal_${name}`)
+      .setTitle('Change Speciality');
+
+    const specialityInput = new TextInputBuilder()
+      .setCustomId('speciality')
+      .setLabel('New speciality (Fullstack, Frontend, Backend, None)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true)
+      .setMaxLength(20);
+
+    modal.addComponents(new ActionRowBuilder().addComponents(specialityInput));
+    return interaction.showModal(modal);
+  }
+}
+
+async function handleCleanupSpecialityModal(interaction) {
+  const name = interaction.customId.slice('cleanup-speciality-modal_'.length);
+  const newSpeciality = interaction.fields.getTextInputValue('speciality').trim();
+
+  const valid = ['fullstack', 'frontend', 'backend', 'none'];
+  const finalSpeciality = valid.includes(newSpeciality.toLowerCase())
+    ? newSpeciality.charAt(0).toUpperCase() + newSpeciality.slice(1)
+    : 'Fullstack';
+
+  const data = loadData();
+  const reviewer = data.reviewers.find(r => r.name.toLowerCase() === name.toLowerCase());
+  if (!reviewer) {
+    return interaction.reply({ content: 'Reviewer not found.', ephemeral: true });
+  }
+
+  reviewer.speciality = finalSpeciality;
+  saveData(data, `${reviewer.name} changed speciality to ${finalSpeciality} via cleanup`);
+
+  const { loadCleanupData, saveCleanupData } = require('./../server/db');
+  const cleanup = loadCleanupData();
+  const campaign = cleanup.campaigns[cleanup.campaigns.length - 1];
+  const entry = campaign?.entries.find(e => e.name.toLowerCase() === name.toLowerCase());
+  if (entry) {
+    entry.status = 'changed';
+    entry.newSpeciality = finalSpeciality;
+    entry.respondedAt = new Date().toISOString();
+    saveCleanupData(cleanup);
+  }
+
+  return interaction.reply({ content: `✅ Your speciality has been changed to **${finalSpeciality}**.`, ephemeral: true });
+}
+
+// Also start the cleanup checker from clientReady
+function startCleanupChecker() {
+  async function cleanupCheck() {
+    const data = loadData();
+    const { loadCleanupData, saveCleanupData } = require('./../server/db');
+    const cleanup = loadCleanupData();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    let changed = false;
+
+    for (const campaign of cleanup.campaigns) {
+      const campaignStart = new Date(campaign.startedAt).getTime();
+      for (const entry of campaign.entries) {
+        if (entry.status === 'pending' && Date.now() - campaignStart >= sevenDays) {
+          const reviewer = data.reviewers.find(r => r.name === entry.name);
+          if (reviewer && reviewer.role !== 'admin') {
+            const reassigned = reassignReviewsAndClearLoad(data, reviewer.name);
+            data.reviewers = data.reviewers.filter(r => r.name !== reviewer.name);
+            entry.status = `auto_removed (${reassigned} reviews reassigned)`;
+            changed = true;
+          }
+          entry.respondedAt = new Date().toISOString();
+        }
+      }
+    }
+
+    if (changed) {
+      saveData(data, 'Cleanup campaign: auto-removed inactive reviewers');
+    }
+    saveCleanupData(cleanup);
+  }
+
+  cleanupCheck();
+  setInterval(cleanupCheck, 60 * 60 * 1000);
 }
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;

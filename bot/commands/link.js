@@ -17,7 +17,7 @@ module.exports = {
       });
     }
 
-    const available = data.reviewers.filter(r => !r.discordId);
+    const available = data.reviewers.filter(r => !r.discordId && !r.disabled);
     const components = [];
 
     if (available.length > 0) {

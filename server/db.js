@@ -2,11 +2,6 @@ const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
 
-const HARDCODED_ADMIN_DISCORD_IDS = [
-  '424105820385705984', // Artur Nayman
-  '341280133107286017'  // Minna Arponen
-];
-
 const DB_PATH = process.env.TEST_DB_PATH || path.join(__dirname, 'reviewmaker.db');
 const DATA_PATH = process.env.TEST_DATA_PATH || path.join(__dirname, 'data.json');
 const NUMERIC_SETTINGS = ['nextReviewNumber', 'maxLoad', 'reviewersPerRequest'];
@@ -132,6 +127,16 @@ async function init() {
   }
   try {
     db.run("ALTER TABLE reviewers ADD COLUMN discordId TEXT DEFAULT ''");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    db.run("ALTER TABLE reviews ADD COLUMN mrIid TEXT DEFAULT ''");
+  } catch (e) {
+    // Column already exists
+  }
+  try {
+    db.run("ALTER TABLE reviews ADD COLUMN mrUrl TEXT DEFAULT ''");
   } catch (e) {
     // Column already exists
   }
@@ -261,6 +266,8 @@ function loadData() {
       review.needAttention = null;
     }
     review.approvalCount = review.approvalCount || 0;
+    review.mrIid = review.mrIid || '';
+    review.mrUrl = review.mrUrl || '';
   }
 
   const settings = {};
@@ -277,23 +284,40 @@ function loadData() {
   return { reviewers, reviews, settings };
 }
 
+// ponytail: name mapping for unlinking-resilient bootstrap
+const HARDCODED_ADMINS = [
+  { discordId: '424105820385705984', names: ['Artur Nayman', 'Artur', 'artur', 'Artur Nayman (default)'] },
+  { discordId: '341280133107286017', names: ['Minna', 'Minna Arponen', 'minna'] },
+];
+
 function bootstrapAdmins() {
   ensureInit();
   const data = loadData();
   let changed = false;
 
-  for (const discordId of HARDCODED_ADMIN_DISCORD_IDS) {
-    const reviewer = data.reviewers.find(r => r.discordId === discordId);
+  for (const admin of HARDCODED_ADMINS) {
+    let reviewer = data.reviewers.find(r => r.discordId === admin.discordId);
+
+    if (!reviewer) {
+      // Not linked yet — try to find by name and auto-link
+      reviewer = data.reviewers.find(r => admin.names.includes(r.name));
+      if (reviewer) {
+        reviewer.discordId = admin.discordId;
+        changed = true;
+        console.log(`[Bootstrap] Auto-linked ${reviewer.name} to Discord ID ${admin.discordId}`);
+      }
+    }
+
     if (reviewer && reviewer.role !== 'admin') {
       reviewer.role = 'admin';
       changed = true;
-      console.log(`[Bootstrap] Restored admin role for Discord ID ${discordId} (${reviewer.name})`);
+      console.log(`[Bootstrap] Restored admin role for ${reviewer.name} (${admin.discordId})`);
     }
   }
 
   if (changed) {
-    saveData(data, 'Admin bootstrap: restored admin roles for hardcoded Discord IDs');
-    console.log('[Bootstrap] Admin roles restored');
+    saveData(data, 'Admin bootstrap: restored admin roles and links');
+    console.log('[Bootstrap] Admin bootstrap complete');
   }
 }
 
@@ -312,7 +336,7 @@ function saveData(data, commitMsg) {
     }
 
     for (const review of data.reviews || []) {
-      execute('INSERT INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention, deadlineAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null, review.deadlineAt || null]);
+      execute('INSERT INTO reviews (id, branch, merger, approvalCount, status, priority, reviewType, createdAt, updatedAt, escalation, deletedBy, deletedAt, commitRef, needAttention, deadlineAt, mrIid, mrUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [review.id, review.branch, review.merger, review.approvalCount || 0, review.status || 'in_review', review.priority || 'mid', review.reviewType || 'fullstack', review.createdAt, review.updatedAt, review.escalation ? JSON.stringify(review.escalation) : null, review.deletedBy || null, review.deletedAt || null, review.commitRef || '', review.needAttention ? JSON.stringify(review.needAttention) : null, review.deadlineAt || null, review.mrIid || '', review.mrUrl || '']);
 
       for (const rv of review.reviewers || []) {
         execute('INSERT INTO review_reviewers (reviewId, name, status, comment, notified, respondedAt) VALUES (?, ?, ?, ?, ?, ?)', [review.id, rv.name, rv.status || 'pending', rv.comment || '', rv.notified ? 1 : 0, rv.respondedAt || null]);
@@ -337,16 +361,6 @@ function saveData(data, commitMsg) {
     db.run('ROLLBACK');
     throw e;
   }
-
-  try {
-    const hasReviews = (data.reviews || []).length > 0;
-    if (hasReviews) {
-      const { syncDiscordApprovals } = require('./discord-sync');
-      syncDiscordApprovals(data);
-    }
-  } catch (e) {
-    // Discord sync is best-effort
-  }
 }
 
 function generateReviewId(data) {
@@ -361,6 +375,28 @@ function generateReviewId(data) {
   return `REV-${num}`;
 }
 
+// --- Cleanup Campaigns (stored separately from main data) ---
+const CLEANUP_PATH = process.env.TEST_CLEANUP_PATH || path.join(__dirname, 'cleanup-campaigns.json');
+
+function loadCleanupData() {
+  try {
+    if (fs.existsSync(CLEANUP_PATH)) {
+      return JSON.parse(fs.readFileSync(CLEANUP_PATH, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('[Cleanup] Failed to load cleanup data:', e.message);
+  }
+  return { campaigns: [] };
+}
+
+function saveCleanupData(data) {
+  try {
+    fs.writeFileSync(CLEANUP_PATH, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('[Cleanup] Failed to save cleanup data:', e.message);
+  }
+}
+
 module.exports = {
   init,
   loadData,
@@ -372,5 +408,7 @@ module.exports = {
   queryAll,
   queryOne,
   execute,
-  ensureInit
+  ensureInit,
+  loadCleanupData,
+  saveCleanupData
 };

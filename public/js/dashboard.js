@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabs();
   setupNewReviewForm();
   setupAdminForms();
+  setupAddUserForm();
   loadReviewers();
   loadReviews();
 });
@@ -273,6 +274,9 @@ async function openReviewModal(id) {
     if (isEscalated && isSenior && review.escalation?.assignedTo?.toLowerCase() === currentUser.name.toLowerCase()) {
       actionsHTML += `<button class="btn btn-sm btn-success" onclick="escalationDecide('${id}', 'approve')">Approve</button><button class="btn btn-sm btn-danger" onclick="escalationDecide('${id}', 'reject')">Reject</button>`;
     }
+    if (isSenior && (review.status === 'in_review' || review.status === 'fix_made')) {
+      actionsHTML += `<button class="btn btn-sm btn-primary" onclick="seniorApprove('${id}')">★ Senior Approve</button>`;
+    }
     if (canDelete && isActive) {
       actionsHTML += `<button class="btn btn-sm btn-danger" onclick="deleteReview('${id}'); closeModal();">Delete Review</button>`;
     }
@@ -399,6 +403,19 @@ async function escalationDecide(id, decision) {
   }
 }
 
+async function seniorApprove(id) {
+  if (!confirm('Senior approve this review? This will fully approve it immediately, bypassing other reviewers.')) return;
+  try {
+    await API.seniorApproveReview(id, currentUser.name);
+    closeModal();
+    loadReviews();
+    loadReviewers();
+    loadMyReviews();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 async function addComment(id) {
   const text = document.getElementById('comment-text').value.trim();
   if (!text) return;
@@ -433,6 +450,30 @@ function setupAdminForms() {
       loadAdminData();
       loadReviewers();
     } catch (err) { alert(err.message); }
+  });
+}
+
+function setupAddUserForm() {
+  if (currentUser.role !== 'admin') return;
+  document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById('adduser-result');
+    const name = document.getElementById('adduser-name').value.trim();
+    const speciality = document.getElementById('adduser-speciality').value;
+    const role = document.getElementById('adduser-role').value;
+    const discordId = document.getElementById('adduser-discordid').value.trim();
+
+    if (!name) { resultEl.innerHTML = '<span class="error-msg">Name is required</span>'; return; }
+
+    try {
+      const reviewers = await API.addReviewer(name, speciality, role, discordId);
+      resultEl.innerHTML = `<span class="success-msg">✅ User <strong>${escHtml(name)}</strong> added!</span>`;
+      document.getElementById('add-user-form').reset();
+      loadReviewers();
+      if (typeof loadAdminData === 'function') loadAdminData();
+    } catch (err) {
+      resultEl.innerHTML = `<span class="error-msg">${escHtml(err.message)}</span>`;
+    }
   });
 }
 
@@ -705,40 +746,6 @@ function copyRawData() {
 
 let editingReviewerName = null;
 
-function loadNextGroupName() {
-  const el = document.getElementById('next-group-name');
-  if (!el) return;
-  fetch('/api/sheets/next-group-name')
-    .then(r => r.json())
-    .then(d => { el.textContent = d.tabName; })
-    .catch(() => { el.textContent = 'unavailable'; });
-}
-
-async function syncDiscordApprovals() {
-  const btn = document.querySelector('#admin-sync .btn-primary');
-  const resultEl = document.getElementById('sync-result');
-  btn.disabled = true;
-  btn.textContent = 'Syncing...';
-  resultEl.innerHTML = '';
-  try {
-    const res = await fetch('/api/sheets/sync-discord', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userRole: currentUser.role })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      resultEl.innerHTML = `<div class="success-msg">✅ Discord approvals synced!</div>`;
-    } else {
-      resultEl.innerHTML = `<div class="error-msg">${data.error || 'Sync failed'}</div>`;
-    }
-  } catch (err) {
-    resultEl.innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
-  }
-  btn.disabled = false;
-  btn.textContent = 'Sync Now';
-}
-
 async function loadGitLabSettings() {
   try {
     const res = await fetch('/api/settings/gitlab');
@@ -772,34 +779,6 @@ async function saveGitLabSettings() {
   } catch (err) {
     resultEl.innerHTML = `<span class="status-badge rejected">Error: ${err.message}</span>`;
   }
-}
-
-async function createNewGroup() {
-  const btn = document.querySelector('#admin-season-groups .btn-primary');
-  const resultEl = document.getElementById('group-result');
-  btn.disabled = true;
-  btn.textContent = 'Creating...';
-  resultEl.innerHTML = '';
-  try {
-    const res = await fetch('/api/sheets/new-group', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userRole: currentUser.role })
-    });
-    const data = await res.json();
-    if (data.created) {
-      resultEl.innerHTML = `<div class="success-msg">✅ Tab "<strong>${data.tabName}</strong>" created!</div>`;
-      loadNextGroupName();
-    } else if (data.reason === 'already exists') {
-      resultEl.innerHTML = `<div class="error-msg">Tab "<strong>${data.tabName}</strong>" already exists.</div>`;
-    } else {
-      resultEl.innerHTML = `<div class="error-msg">Failed: ${data.reason || data.error || 'Unknown error'}</div>`;
-    }
-  } catch (err) {
-    resultEl.innerHTML = `<div class="error-msg">Error: ${err.message}</div>`;
-  }
-  btn.disabled = false;
-  btn.textContent = 'Create New Group';
 }
 
 async function openReviewerEdit(name) {
@@ -997,34 +976,6 @@ async function debugRunQuery() {
   }
 }
 
-async function debugInspectSheets() {
-  const tab = document.getElementById('debug-sheets-tab').value;
-  const result = document.getElementById('debug-sheets-result');
-  result.textContent = 'Inspecting...';
-
-  try {
-    const data = await API.debugGetSheetColumns(tab);
-    if (!data.available) {
-      result.innerHTML = `<span style="color:var(--text-muted);">${data.reason || 'Sheets not configured'}</span>`;
-      return;
-    }
-    if (data.error) {
-      result.innerHTML = `<span style="color:var(--danger);">Error: ${data.error}</span>`;
-      return;
-    }
-    let html = `<div style="font-size:0.75rem;">Tab: <strong>${data.tabName}</strong> — ${data.columns.length} columns</div><div style="display:grid;grid-template-columns:auto auto 1fr;gap:0.25rem 1rem;margin-top:0.5rem;font-size:0.7rem;">`;
-    data.columns.forEach(c => {
-      html += `<span style="color:var(--text-muted);">${c.column}</span>`;
-      html += `<span style="color:var(--text-muted);">#${c.index + 1}</span>`;
-      html += `<span>${c.header}</span>`;
-    });
-    html += '</div>';
-    result.innerHTML = html;
-  } catch (err) {
-    result.innerHTML = `<span style="color:var(--danger);">Error: ${err.message}</span>`;
-  }
-}
-
 async function debugGitStatus() {
   const result = document.getElementById('debug-git-result');
   result.textContent = 'Checking...';
@@ -1048,46 +999,6 @@ async function debugGitStatus() {
     result.textContent = out;
   } catch (err) {
     result.textContent = `Error: ${err.message}`;
-  }
-}
-
-async function debugTriggerSync() {
-  const result = document.getElementById('debug-action-result');
-  result.innerHTML = '<span class="status-badge pending">Syncing...</span>';
-  try {
-    const res = await fetch('/api/sheets/sync-discord', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userRole: currentUser.role })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      result.innerHTML = '<span class="status-badge approved">✅ Discord sync triggered</span>';
-    } else {
-      result.innerHTML = `<span class="status-badge rejected">${data.error || 'Sync failed'}</span>`;
-    }
-  } catch (err) {
-    result.innerHTML = `<span class="status-badge rejected">Error: ${err.message}</span>`;
-  }
-}
-
-async function debugBulkSyncSheets() {
-  const result = document.getElementById('debug-action-result');
-  result.innerHTML = '<span class="status-badge pending">Syncing...</span>';
-  try {
-    const res = await fetch('/api/sheets/bulk-sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userRole: currentUser.role })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      result.innerHTML = '<span class="status-badge approved">✅ Review Queue synced</span>';
-    } else {
-      result.innerHTML = `<span class="status-badge rejected">${data.error || 'Sync failed'}</span>`;
-    }
-  } catch (err) {
-    result.innerHTML = `<span class="status-badge rejected">Error: ${err.message}</span>`;
   }
 }
 

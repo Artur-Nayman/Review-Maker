@@ -1,7 +1,10 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const bcrypt = require('bcryptjs');
 const { loadData, saveData, getReviewerByName, getReviewerByDiscordId, generatePassword, getReviewerCapacity, findReviewById } = require('../utils/data');
 const { createSuccessEmbed, createErrorEmbed, createReviewersEmbed, createWorkloadEmbed, createDashboardEmbed } = require('../utils/embeds');
+const { loadCleanupData, saveCleanupData } = require('../../server/db');
+const { exec } = require('child_process');
+const path = require('path');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -37,6 +40,7 @@ module.exports = {
           { name: 'Scrum Master', value: 'scrum_master' },
           { name: 'Manager', value: 'manager' }
         ))
+        .addStringOption(opt => opt.setName('discordid').setDescription('Discord user ID (optional)'))
     )
     .addSubcommand(subcommand =>
       subcommand
@@ -47,14 +51,20 @@ module.exports = {
     .addSubcommand(subcommand =>
       subcommand
         .setName('set-role')
-        .setDescription('Change a user role')
+        .setDescription('Change a user role and/or speciality')
         .addStringOption(opt => opt.setName('user').setDescription('User name').setRequired(true))
-        .addStringOption(opt => opt.setName('role').setDescription('New role').setRequired(true).addChoices(
+        .addStringOption(opt => opt.setName('role').setDescription('New role').addChoices(
           { name: 'Reviewer', value: 'reviewer' },
           { name: 'Senior', value: 'senior' },
           { name: 'Scrum Master', value: 'scrum_master' },
           { name: 'Manager', value: 'manager' },
           { name: 'Admin', value: 'admin' }
+        ))
+        .addStringOption(opt => opt.setName('speciality').setDescription('New speciality').addChoices(
+          { name: 'Fullstack', value: 'Fullstack' },
+          { name: 'Frontend', value: 'Frontend' },
+          { name: 'Backend', value: 'Backend' },
+          { name: 'None', value: 'None' }
         ))
     )
     .addSubcommand(subcommand =>
@@ -141,6 +151,16 @@ module.exports = {
         .setName('broadcast')
         .setDescription('Send a message to all reviewers (admin only)')
         .addStringOption(opt => opt.setName('message').setDescription('Message to broadcast').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('cleanup')
+        .setDescription('Start a cleanup campaign — DM all reviewers to confirm activity')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('git-pull')
+        .setDescription('Force git pull from dashboard-remote and restart on changes')
     ),
 
   async execute(interaction) {
@@ -201,6 +221,7 @@ module.exports = {
         const name = interaction.options.getString('name');
         const speciality = interaction.options.getString('speciality') || 'Fullstack';
         const role = interaction.options.getString('role') || 'reviewer';
+        const discordId = interaction.options.getString('discordid') || '';
 
         if (getReviewerByName(data, name)) {
           return interaction.reply({ embeds: [createErrorEmbed('User already exists')], ephemeral: true });
@@ -222,7 +243,7 @@ module.exports = {
           role,
           email: '',
           password: await bcrypt.hash(generatedPassword, 10),
-          discordId: ''
+          discordId
         });
 
         saveData(data, "Bot admin action");
@@ -256,6 +277,7 @@ module.exports = {
       case 'set-role': {
         const name = interaction.options.getString('user');
         const role = interaction.options.getString('role');
+        const speciality = interaction.options.getString('speciality');
         const reviewer = getReviewerByName(data, name);
 
         if (!reviewer) {
@@ -274,11 +296,17 @@ module.exports = {
           reviewer.speciality = 'None';
         }
 
-        reviewer.role = role;
+        if (role) reviewer.role = role;
+        if (speciality) reviewer.speciality = speciality;
+
         saveData(data, "Bot admin action");
 
+        const changes = [];
+        if (role) changes.push(`role → **${role}**`);
+        if (speciality) changes.push(`speciality → **${speciality}**`);
+
         return interaction.reply({
-          embeds: [createSuccessEmbed(`Role for **${name}** changed to **${role}**`)]
+          embeds: [createSuccessEmbed(`**${name}** updated: ${changes.join(', ') || 'no changes'}`)]
         });
       }
 
@@ -605,6 +633,105 @@ module.exports = {
           content: `${mentions}\n\n📢 **Admin Broadcast:** ${message}`
         });
       }
+
+      case 'cleanup': {
+        return handleCleanup(interaction, data, user);
+      }
+
+      case 'git-pull': {
+        await interaction.deferReply({ ephemeral: true });
+        try {
+          const projectRoot = path.resolve(__dirname, '../..');
+          const { stdout } = await new Promise((resolve, reject) => {
+            exec('git pull origin dashboard-remote', { cwd: projectRoot }, (err, stdout, stderr) => {
+              if (err) reject(new Error(stderr || err.message));
+              else resolve({ stdout });
+            });
+          });
+          const hasChanges = !stdout.includes('Already up to date');
+          await interaction.editReply({
+            content: `\`\`\`\n${stdout.trim()}\n\`\`\`\n${hasChanges ? '🔄 Changes detected — restarting…' : '✅ Already up to date.'}`
+          });
+          if (hasChanges) setTimeout(() => process.exit(0), 1000);
+        } catch (err) {
+          await interaction.editReply({
+            content: `❌ Git pull failed:\n\`\`\`\n${err.message}\n\`\`\``
+          });
+        }
+        break;
+      }
     }
   }
 };
+
+async function handleCleanup(interaction, data, adminUser) {
+  const linkedReviewers = data.reviewers.filter(r => r.discordId && !r.disabled && r.role !== 'admin');
+
+  if (linkedReviewers.length === 0) {
+    return interaction.reply({ embeds: [createErrorEmbed('No linked active reviewers to contact')], ephemeral: true });
+  }
+
+  const cleanup = loadCleanupData();
+  const campaign = {
+    id: `campaign-${Date.now()}`,
+    startedAt: new Date().toISOString(),
+    startedBy: adminUser.name,
+    entries: linkedReviewers.map(r => ({
+      name: r.name,
+      discordId: r.discordId,
+      status: 'pending'
+    }))
+  };
+
+  cleanup.campaigns.push(campaign);
+  saveCleanupData(cleanup);
+
+  const respondRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('cleanup-respond')
+      .setLabel('📋 Respond to Cleanup')
+      .setStyle(ButtonStyle.Primary)
+  );
+
+  // reply() is always public — the only reliable way
+  await interaction.reply({
+    content: `📋 **Reviewer Cleanup**\n${linkedReviewers.map(r => `<@${r.discordId}>`).join(', ')}\n\nThe admin is cleaning up the reviewer list. Click the button below and respond within **7 days** or you will be automatically disabled.\n*(Your response is only visible to you)*`,
+    components: [respondRow],
+    fetchReply: true
+  });
+
+  return interaction.followUp({
+    content: `✅ Notified ${linkedReviewers.length} reviewers. 7-day timeout started.`,
+    ephemeral: true
+  });
+}
+
+async function handleCleanupStatus(interaction) {
+  const cleanup = loadCleanupData();
+
+  if (!cleanup.campaigns.length) {
+    return interaction.reply({ embeds: [createErrorEmbed('No cleanup campaigns found.')], ephemeral: true });
+  }
+
+  const campaign = cleanup.campaigns[cleanup.campaigns.length - 1];
+  const startedAt = new Date(campaign.startedAt);
+  const deadline = new Date(startedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const now = Date.now();
+  const timeLeft = Math.max(0, deadline.getTime() - now);
+  const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
+
+  const staying = campaign.entries.filter(e => e.status === 'staying');
+  const leaving = campaign.entries.filter(e => e.status === 'leaving' || e.status.startsWith('auto_removed'));
+  const pending = campaign.entries.filter(e => e.status === 'pending');
+
+  const lines = [
+    `**Campaign** started by **${campaign.startedBy}** on ${startedAt.toLocaleDateString()}`,
+    `⏰ **${daysLeft} day(s)** until auto-removal of non-responders`,
+    '',
+    `✅ **Staying (${staying.length})**: ${staying.length > 0 ? staying.map(e => e.name).join(', ') : '—'}`,
+    `🚪 **Leaving (${leaving.length})**: ${leaving.length > 0 ? leaving.map(e => e.name).join(', ') : '—'}`,
+    `⏳ **Pending (${pending.length})**: ${pending.length > 0 ? pending.map(e => e.name).join(', ') : '—'}`,
+  ];
+
+  return interaction.reply({ embeds: [createSuccessEmbed(lines.join('\n'))], ephemeral: true });
+}

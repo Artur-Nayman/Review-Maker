@@ -59,7 +59,8 @@ const passwordLimiter = rateLimit({
 // Data functions moved to db.js
 
 function getReviewerByName(data, name) {
-  return data.reviewers.find(r => r.name.toLowerCase() === name.toLowerCase());
+  if (!name) return undefined;  // ponytail: guard against undefined crashing toLowerCase
+  return data.reviewers.find(r => r.name && r.name.toLowerCase() === name.toLowerCase());
 }
 
 function isReviewableRole(role) {
@@ -254,6 +255,14 @@ app.get('/api/reviews', (req, res) => {
   res.json({ active, history });
 });
 
+app.get('/api/reviews/approved', (req, res) => {
+  const data = loadData();
+  const approved = data.reviews
+    .filter(r => r.status === 'approved')
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  res.json(approved);
+});
+
 app.get('/api/reviews/:id', (req, res) => {
   const data = loadData();
   const review = findReviewById(data, req.params.id);
@@ -303,6 +312,24 @@ app.post('/api/reviews', (req, res) => {
   saveData(data, `Review ${review.id} created: ${review.branch}`);
 
   res.json(review);
+});
+
+app.post('/api/reviews/from-mr', async (req, res) => {
+  const { mrIid, merger, reviewType, priority } = req.body;
+  if (!mrIid || !merger || !reviewType || !priority) {
+    return res.status(400).json({ error: 'Missing required fields: mrIid, merger, reviewType, priority' });
+  }
+
+  try {
+    const { fetchMRByIid } = require('./gitlab-sync');
+    const { createReview } = require('../bot/utils/reviews');
+    const cleanIid = String(mrIid).trim().replace(/^!/, '');
+    const mr = await fetchMRByIid(cleanIid);
+    const review = createReview(mr.title, merger, reviewType, priority, '', cleanIid, mr.web_url, mr.title);
+    res.json(review);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/reviews/:id', (req, res) => {
@@ -471,6 +498,39 @@ app.post('/api/reviews/:id/escalation-decide', (req, res) => {
   }
 
   saveData(data, `Review ${req.params.id} escalation decided: ${decision}`);
+  res.json(review);
+});
+
+app.post('/api/reviews/:id/senior-approve', (req, res) => {
+  const { seniorName } = req.body;
+  const data = loadData();
+  const senior = getReviewerByName(data, seniorName);
+
+  if (!senior || senior.role !== 'senior') {
+    return res.status(403).json({ error: 'Only seniors can use this endpoint' });
+  }
+
+  const review = findReviewById(data, req.params.id);
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+  if (review.status !== 'in_review' && review.status !== 'fix_made') {
+    return res.status(400).json({ error: 'Review is not in a reviewable state' });
+  }
+
+  let approvedCount = 0;
+  for (const rv of review.reviewers) {
+    if (rv.status === 'pending') {
+      rv.status = 'approved';
+      rv.respondedAt = new Date().toISOString();
+      decrementReviewerLoad(data, rv.name);
+      approvedCount++;
+    }
+  }
+
+  review.approvalCount = review.reviewers.length;
+  review.status = 'approved';
+  review.updatedAt = new Date().toISOString();
+
+  saveData(data, `Review ${req.params.id} senior-approved by ${seniorName}`);
   res.json(review);
 });
 
@@ -705,7 +765,7 @@ app.post('/api/reviews/manual', (req, res) => {
 });
 
 app.post('/api/reviewers', async (req, res) => {
-  const { name, speciality, role } = req.body;
+  const { name, speciality, role, discordId } = req.body;
 
   let data = loadData();
   if (getReviewerByName(data, name)) {
@@ -728,6 +788,7 @@ app.post('/api/reviewers', async (req, res) => {
     role: role || 'reviewer',
     email: '',
     password: hashedPassword,
+    discordId: discordId || '',
     disabled: false,
     maxLoad: 0,
     weeklyCount: 0,
@@ -980,17 +1041,18 @@ app.post('/api/import-csv', (req, res) => {
   }
 
   const data = loadData();
-  const admin = data.reviewers.find(r => r.role === 'admin');
-  const senior = data.reviewers.find(r => r.role === 'senior');
-  const scrumMaster = data.reviewers.find(r => r.role === 'scrum_master');
-  const manager = data.reviewers.find(r => r.role === 'manager');
+  // ponytail: preserve ALL privileged users, not just the first one
+  const admins = data.reviewers.filter(r => r.role === 'admin');
+  const seniors = data.reviewers.filter(r => r.role === 'senior');
+  const scrumMasters = data.reviewers.filter(r => r.role === 'scrum_master');
+  const managers = data.reviewers.filter(r => r.role === 'manager');
 
   data.reviewers = newReviewers;
 
-  if (admin) data.reviewers.push(admin);
-  if (senior) data.reviewers.push(senior);
-  if (scrumMaster) data.reviewers.push(scrumMaster);
-  if (manager) data.reviewers.push(manager);
+  if (admins.length) data.reviewers.push(...admins);
+  if (seniors.length) data.reviewers.push(...seniors);
+  if (scrumMasters.length) data.reviewers.push(...scrumMasters);
+  if (managers.length) data.reviewers.push(...managers);
 
   saveData(data, `CSV imported: ${newReviewers.length} reviewers`);
   res.json(data.reviewers);
@@ -1075,58 +1137,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
-// --- Season Groups (Google Sheets) ---
-app.post('/api/sheets/new-group', async (req, res) => {
-  const { userRole } = req.body;
-  if (userRole !== 'admin' && userRole !== 'manager') {
-    return res.status(403).json({ error: 'Only admin/manager can create new groups' });
-  }
-  try {
-    const { createSeasonTab } = require('./season-groups');
-    const result = await createSeasonTab();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/sheets/next-group-name', (req, res) => {
-  try {
-    const { getNextTabName } = require('./season-groups');
-    res.json({ tabName: getNextTabName() });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/sheets/sync-discord', (req, res) => {
-  const { userRole } = req.body;
-  if (userRole !== 'admin' && userRole !== 'manager') {
-    return res.status(403).json({ error: 'Only admin/manager can sync' });
-  }
-  try {
-    const data = loadData();
-    require('./discord-sync').bulkSyncDiscordApprovals(data);
-    res.json({ message: 'Discord approvals synced' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/sheets/bulk-sync', (req, res) => {
-  const { userRole } = req.body;
-  if (userRole !== 'admin' && userRole !== 'manager') {
-    return res.status(403).json({ error: 'Only admin/manager can sync' });
-  }
-  try {
-    const data = loadData();
-    require('./sheets-sync').bulkSyncToSheet(data);
-    res.json({ message: 'Review Queue bulk synced' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 async function startServer() {
   const db = require('./db');
   await db.init();
@@ -1135,20 +1145,12 @@ async function startServer() {
   await migratePasswords(data);
 
   try {
-    const { bulkSyncDiscordApprovals } = require('./discord-sync');
-    bulkSyncDiscordApprovals(data);
-    console.log('[DiscordSync] Initial sync complete');
+    const { checkMergedMRs } = require('./gitlab-sync');
+    checkMergedMRs();
+    setInterval(() => checkMergedMRs(), 5 * 60 * 1000);
+    console.log('[GitLabSync] Initial check complete, polling every 5 min');
   } catch (e) {
-    console.log('[DiscordSync] Initial sync skipped:', e.message);
-  }
-
-  try {
-    const { syncGitLabMRs } = require('./gitlab-sync');
-    syncGitLabMRs();
-    setInterval(() => syncGitLabMRs(), 5 * 60 * 1000);
-    console.log('[GitLabSync] Initial sync complete, polling every 5 min');
-  } catch (e) {
-    console.log('[GitLabSync] Initial sync skipped:', e.message);
+    console.log('[GitLabSync] Initial check skipped:', e.message);
   }
 
   app.listen(PORT, () => {

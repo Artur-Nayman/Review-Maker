@@ -21,7 +21,7 @@ module.exports = {
       subcommand
         .setName('create')
         .setDescription('Create a new review (auto-assign reviewers)')
-        .addStringOption(opt => opt.setName('branch').setDescription('Branch name').setRequired(true))
+        .addStringOption(opt => opt.setName('mr_iid').setDescription('GitLab MR IID (e.g., 12)').setRequired(true))
         .addStringOption(opt => opt.setName('type').setDescription('Review type').setRequired(true).addChoices(
           { name: 'Frontend', value: 'frontend' },
           { name: 'Backend', value: 'backend' },
@@ -38,7 +38,7 @@ module.exports = {
         .setName('create-commit')
         .setDescription('Create a review for a commit (auto-assign reviewers)')
         .addStringOption(opt => opt.setName('commit').setDescription('Commit hash or message').setRequired(true))
-        .addStringOption(opt => opt.setName('branch').setDescription('Branch name').setRequired(true))
+        .addStringOption(opt => opt.setName('mr_iid').setDescription('GitLab MR IID (e.g., 12)').setRequired(true))
         .addStringOption(opt => opt.setName('type').setDescription('Review type').setRequired(true).addChoices(
           { name: 'Frontend', value: 'frontend' },
           { name: 'Backend', value: 'backend' },
@@ -54,7 +54,7 @@ module.exports = {
       subcommand
         .setName('create-manual')
         .setDescription('Create a review with specific reviewers (admin only)')
-        .addStringOption(opt => opt.setName('branch').setDescription('Branch name').setRequired(true))
+        .addStringOption(opt => opt.setName('mr_iid').setDescription('GitLab MR IID (e.g., 12)').setRequired(true))
         .addStringOption(opt => opt.setName('type').setDescription('Review type').setRequired(true).addChoices(
           { name: 'Frontend', value: 'frontend' },
           { name: 'Backend', value: 'backend' },
@@ -115,6 +115,12 @@ module.exports = {
         .setName('unassign')
         .setDescription('Unassign yourself from a review (notifies admin)')
         .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. 1 or REV-1)').setRequired(true))
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('senior-approve')
+        .setDescription('Force-approve a review (senior only — bypasses approval count)')
+        .addStringOption(opt => opt.setName('id').setDescription('Review ID (e.g. 1 or REV-1)').setRequired(true))
     ),
 
   async execute(interaction) {
@@ -131,17 +137,19 @@ module.exports = {
 
     switch (subcommand) {
       case 'create': {
-        const branch = interaction.options.getString('branch');
+        const mrIid = interaction.options.getString('mr_iid').trim().replace(/^!/, '');
         const type = interaction.options.getString('type');
         const priority = interaction.options.getString('priority');
         const merger = reviewer.name;
 
         try {
-          const review = createReview(branch, merger, type, priority);
+          const { fetchMRByIid } = require('../../server/gitlab-sync');
+          const mr = await fetchMRByIid(mrIid);
+          const review = createReview(mr.title, merger, type, priority, '', mrIid, mr.web_url, mr.title);
           const embed = createReviewEmbed(review, true);
           const mentions = review.reviewers.map(rv => getReviewerMention(rv.name)).filter(m => m.startsWith('<@'));
           const mentionText = mentions.length > 0 ? `\n${mentions.join(' ')} — please review!` : '';
-          return interaction.reply({ content: `Review created: **${review.id}**${mentionText}`, embeds: [embed] });
+          return interaction.reply({ content: `Review created: **${review.id}** — [${mr.title}](${mr.web_url})${mentionText}`, embeds: [embed] });
         } catch (err) {
           return interaction.reply({ embeds: [createErrorEmbed(err.message)], ephemeral: true });
         }
@@ -149,17 +157,19 @@ module.exports = {
 
       case 'create-commit': {
         const commit = interaction.options.getString('commit');
-        const branch = interaction.options.getString('branch');
+        const mrIid = interaction.options.getString('mr_iid').trim().replace(/^!/, '');
         const type = interaction.options.getString('type');
         const priority = interaction.options.getString('priority');
         const merger = reviewer.name;
 
         try {
-          const review = createReview(branch, merger, type, priority, commit);
+          const { fetchMRByIid } = require('../../server/gitlab-sync');
+          const mr = await fetchMRByIid(mrIid);
+          const review = createReview(mr.title, merger, type, priority, commit, mrIid, mr.web_url, mr.title);
           const embed = createReviewEmbed(review, true);
           const mentions = review.reviewers.map(rv => getReviewerMention(rv.name)).filter(m => m.startsWith('<@'));
           const mentionText = mentions.length > 0 ? `\n${mentions.join(' ')} — please review!` : '';
-          return interaction.reply({ content: `Review created: **${review.id}**${mentionText}`, embeds: [embed] });
+          return interaction.reply({ content: `Review created: **${review.id}** — [${mr.title}](${mr.web_url})${mentionText}`, embeds: [embed] });
         } catch (err) {
           return interaction.reply({ embeds: [createErrorEmbed(err.message)], ephemeral: true });
         }
@@ -170,35 +180,41 @@ module.exports = {
           return interaction.reply({ content: 'Only admins can create manual reviews.', ephemeral: true });
         }
 
-        const branch = interaction.options.getString('branch');
+        const mrIid = interaction.options.getString('mr_iid').trim().replace(/^!/, '');
         const type = interaction.options.getString('type');
         const priority = interaction.options.getString('priority');
 
-        const reviewableReviewers = data.reviewers.filter(r => r.role === 'reviewer' || r.role === 'senior');
-        const options = reviewableReviewers.slice(0, 25).map(r => ({
-          label: r.name,
-          description: `${r.speciality} (load: ${r.load})`,
-          value: r.name
-        }));
+        try {
+          const { fetchMRByIid } = require('../../server/gitlab-sync');
+          const mr = await fetchMRByIid(mrIid);
+          const reviewableReviewers = data.reviewers.filter(r => r.role === 'reviewer' || r.role === 'senior');
+          const options = reviewableReviewers.slice(0, 25).map(r => ({
+            label: r.name,
+            description: `${r.speciality} (load: ${r.load})`,
+            value: r.name
+          }));
 
-        const select = new StringSelectMenuBuilder()
-          .setCustomId(`manual-review_${branch}_${type}_${priority}`)
-          .setPlaceholder('Select reviewers (up to 25)')
-          .setMinValues(1)
-          .setMaxValues(25)
-          .addOptions(options);
+          const select = new StringSelectMenuBuilder()
+            .setCustomId(`manual-review|${mrIid}|${type}|${priority}|${encodeURIComponent(mr.title)}|${mr.web_url}`)
+            .setPlaceholder('Select reviewers (up to 25)')
+            .setMinValues(1)
+            .setMaxValues(25)
+            .addOptions(options);
 
-        const row = new ActionRowBuilder().addComponents(select);
+          const row = new ActionRowBuilder().addComponents(select);
 
-        return interaction.reply({
-          content: `Creating manual review for **${branch}**. Select reviewers:`,
-          components: [row],
-          ephemeral: true
-        });
+          return interaction.reply({
+            content: `Creating manual review for **[${mr.title}](${mr.web_url})**. Select reviewers:`,
+            components: [row],
+            ephemeral: true
+          });
+        } catch (err) {
+          return interaction.reply({ embeds: [createErrorEmbed(err.message)], ephemeral: true });
+        }
       }
 
       case 'approve': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
 
         try {
           const review = approveReview(id, reviewer.name);
@@ -220,7 +236,7 @@ module.exports = {
       }
 
       case 'reject': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
         const comment = interaction.options.getString('comment');
 
         try {
@@ -237,7 +253,7 @@ module.exports = {
       }
 
       case 'fix-done': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
 
         try {
           const reviewBefore = getReviewById(id);
@@ -278,7 +294,7 @@ module.exports = {
       }
 
       case 'escalate': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
         const reason = interaction.options.getString('reason');
 
         try {
@@ -291,7 +307,7 @@ module.exports = {
       }
 
       case 'comment': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
         const text = interaction.options.getString('text');
 
         try {
@@ -310,7 +326,7 @@ module.exports = {
       }
 
       case 'details': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
         const review = getReviewById(id);
 
         if (!review) {
@@ -323,7 +339,7 @@ module.exports = {
       }
 
       case 'unassign': {
-        const id = interaction.options.getString('id');
+        const id = resolveReviewId(interaction.options.getString('id'));
         const review = getReviewById(id);
 
         if (!review) {
@@ -365,9 +381,57 @@ module.exports = {
           embeds: [createErrorEmbed(`You have been unassigned from review **${review.id}**. An admin has been notified.`)]
         });
       }
+
+      case 'senior-approve': {
+        if (reviewer.role !== 'senior') {
+          return interaction.reply({ content: 'Only seniors can use this command.', ephemeral: true });
+        }
+
+        const id = resolveReviewId(interaction.options.getString('id'));
+        const review = getReviewById(id);
+
+        if (!review) {
+          return interaction.reply({ embeds: [createErrorEmbed('Review not found')], ephemeral: true });
+        }
+
+        if (review.status !== 'in_review' && review.status !== 'fix_made') {
+          return interaction.reply({ embeds: [createErrorEmbed('Review is not in a reviewable state')], ephemeral: true });
+        }
+
+        const { saveData } = require('../utils/data');
+        let approvedCount = 0;
+        for (const rv of review.reviewers) {
+          if (rv.status === 'pending') {
+            rv.status = 'approved';
+            rv.respondedAt = new Date().toISOString();
+            // Decrement load for the reviewer being approved
+            const rev = data.reviewers.find(r => r.name.toLowerCase() === rv.name.toLowerCase());
+            if (rev && rev.load > 0) rev.load--;
+            approvedCount++;
+          }
+        }
+
+        review.approvalCount = review.reviewers.length;
+        review.status = 'approved';
+        review.updatedAt = new Date().toISOString();
+        saveData(data, `Review ${review.id} senior-approved by ${reviewer.name}`);
+
+        const embed = require('../utils/embeds').createReviewEmbed(review);
+        return interaction.reply({
+          content: `✅ Senior approved **${review.id}** (${review.branch}). All pending responses marked as approved.`,
+          embeds: [embed]
+        });
+      }
     }
   }
 };
+
+function resolveReviewId(input) {
+  if (!input) return input;
+  const trimmed = input.trim();
+  if (trimmed.startsWith('REV-')) return trimmed;
+  return `REV-${trimmed}`;
+}
 
 function createActionButtons(review, reviewerName) {
   const myReviewer = review.reviewers.find(r => r.name.toLowerCase() === reviewerName.toLowerCase());
