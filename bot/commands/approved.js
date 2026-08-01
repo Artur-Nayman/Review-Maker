@@ -10,7 +10,7 @@ module.exports = {
   async execute(interaction) {
     const data = loadData();
     const approved = data.reviews
-      .filter(r => r.status === 'approved')
+      .filter(r => r.status === 'approved' && (r.mrIid || r.mrUrl))
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 25);
 
